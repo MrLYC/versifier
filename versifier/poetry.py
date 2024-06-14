@@ -3,12 +3,9 @@ import os
 from dataclasses import dataclass
 from subprocess import check_call
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Any, Iterable, List
+from typing import Any, Iterable, List, Set
 
-from requirements import parse as parse_requirements
-
-if TYPE_CHECKING:
-    from requirements.requirement import Requirement
+from pip_requirements_parser import RequirementsFile
 
 logger = logging.getLogger(__name__)
 
@@ -17,22 +14,13 @@ logger = logging.getLogger(__name__)
 class Poetry:
     poetry_path: str
 
-    def _requirement_to_literal(self, r: "Requirement", include_specifier: bool = True, raw: bool = False) -> str:
-        if raw:
-            return r.line  # type: ignore
-
-        if include_specifier and r.specs:
-            specifier = ",".join(f"{i[0]}{i[1]}" for i in r.specs)
-        else:
-            specifier = ""
-
-        return f"{r.name}{specifier}"
-
-    def _iter_requirements(self, requirements: List[str]) -> Iterable[str]:
+    def _iter_requirements(self, requirements: List[str], exclude_packages: Set[str]) -> Iterable[str]:
         for n in requirements:
-            with open(n, "r") as f:
-                for r in parse_requirements(f):
-                    yield self._requirement_to_literal(r)
+            requirements_file = RequirementsFile.from_file(n)
+            for r in requirements_file.requirements:
+                if r.name in exclude_packages:
+                    continue
+                yield str(r.req)
 
     def add_from_requirements_txt(
         self,
@@ -45,15 +33,13 @@ class Poetry:
 
         commands = [self.poetry_path, "add", "--no-interaction"]
 
-        requirements_to_add = list(r for r in self._iter_requirements(requirements) if r not in exclude_packages)
+        requirements_to_add = list(self._iter_requirements(requirements, exclude_packages))
 
         if requirements_to_add:
             logger.info("Adding requirements: %s", requirements_to_add)
             callback(commands + requirements_to_add)
 
-        dev_requirements_to_add = list(
-            r for r in self._iter_requirements(dev_requirements) if r not in exclude_packages
-        )
+        dev_requirements_to_add = list(self._iter_requirements(dev_requirements, exclude_packages))
 
         if dev_requirements_to_add:
             logger.info("Adding dev requirements: %s", dev_requirements_to_add)
@@ -89,9 +75,11 @@ class Poetry:
         include_dev_requirements: bool = False,
         extra_requirements: Iterable[str] = (),
         exclude: Iterable[str] = (),
+        markers: Iterable[str] = (),
         callback: Any = print,
     ) -> None:
         exclude_packages = set(exclude)
+        marker_dict = dict(m.split("==", 1) for m in markers)
 
         with TemporaryDirectory() as td:
             requirements_path = os.path.join(td, "requirements.txt")
@@ -102,14 +90,16 @@ class Poetry:
                 extra_requirements=extra_requirements,
             )
 
-            with open(requirements_path, "r") as f:
-                for r in parse_requirements(f):
-                    if r.name in exclude_packages:
-                        continue
+            requirements = RequirementsFile.from_file(requirements_path)
+            for r in requirements.requirements:
+                if not r.marker.evaluate(marker_dict):
+                    continue
 
-                    line = self._requirement_to_literal(
-                        r,
-                        include_specifier=include_specifiers,
-                        raw=include_comments,
-                    )
-                    callback(line)
+                if r.name in exclude_packages:
+                    continue
+
+                if include_specifiers:
+                    callback(str(r.req))
+
+                else:
+                    callback(r.req.name)

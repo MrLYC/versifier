@@ -10,9 +10,9 @@ packages = [{ include = "versifier" }]
 
 [tool.poetry.dependencies]
 python = ">=3.6.2,<4.0"
-requirements-parser = "0.6.0"
 click = "8.0.3"
 dataclasses = { version = "0.8", python = "<3.7" }
+pip-requirements-parser = "^32.0.1"
 
 [[tool.poetry.source]]
 name = "tencent"

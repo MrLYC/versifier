@@ -48,6 +48,7 @@ def requirements_to_poetry(
 @click.option("-e", "--exclude", multiple=True, default=[], help="exclude packages")
 @click.option("-d", "--include-dev-requirements", is_flag=True, help="include dev requirements")
 @click.option("-E", "--extra-requirements", multiple=True, default=[], help="extra requirements")
+@click.option("-m", "--markers", multiple=True, default=[], help="markers")
 def poetry_to_requirements(
     output: str,
     poetry_path: str,
@@ -56,6 +57,7 @@ def poetry_to_requirements(
     exclude: List[str],
     include_dev_requirements: bool,
     extra_requirements: List[str],
+    markers: List[str],
 ) -> None:
     poetry = Poetry(poetry_path)
     fn = partial(
@@ -65,6 +67,7 @@ def poetry_to_requirements(
         exclude=exclude,
         include_dev_requirements=include_dev_requirements,
         extra_requirements=extra_requirements,
+        markers=markers,
     )
 
     if output == "":
