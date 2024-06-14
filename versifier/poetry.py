@@ -43,7 +43,7 @@ class Poetry:
     ) -> None:
         exclude_packages = set(exclude)
 
-        commands = [self.poetry_path, "add"]
+        commands = [self.poetry_path, "add", "--no-interaction"]
 
         requirements_to_add = list(r for r in self._iter_requirements(requirements) if r not in exclude_packages)
 
@@ -70,6 +70,7 @@ class Poetry:
             "export",
             "--format=requirements.txt",
             "--without-hashes",
+            "--no-interaction",
             f"--output={requirements_path}",
         ]
 
@@ -106,5 +107,9 @@ class Poetry:
                     if r.name in exclude_packages:
                         continue
 
-                    line = self._requirement_to_literal(r, include_specifier=include_specifiers, raw=include_comments)
+                    line = self._requirement_to_literal(
+                        r,
+                        include_specifier=include_specifiers,
+                        raw=include_comments,
+                    )
                     callback(line)
