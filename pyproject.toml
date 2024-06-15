@@ -13,6 +13,7 @@ python = ">=3.6.2,<4.0"
 click = "8.0.3"
 dataclasses = { version = "0.8", python = "<3.7" }
 pip-requirements-parser = "^32.0.1"
+tomli = "^1.2.3"
 
 [[tool.poetry.source]]
 name = "tencent"
@@ -27,6 +28,9 @@ mypy = "0.971"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.versifier]
+private_packags = ["tomli"]
 
 [tool.mypy]
 files = ["versifier"]

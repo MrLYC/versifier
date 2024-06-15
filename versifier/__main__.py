@@ -7,6 +7,8 @@ import click
 
 from versifier.poetry import Poetry
 
+from .config import Config
+
 logger = logging.getLogger(__name__)
 
 
@@ -45,7 +47,6 @@ def requirements_to_poetry(
 @click.option("--poetry-path", default="poetry", help="path to poetry")
 @click.option("--exclude-specifiers", is_flag=True, help="exclude specifiers")
 @click.option("--include-comments", is_flag=True, help="include comments")
-@click.option("-e", "--exclude", multiple=True, default=[], help="exclude packages")
 @click.option("-d", "--include-dev-requirements", is_flag=True, help="include dev requirements")
 @click.option("-E", "--extra-requirements", multiple=True, default=[], help="extra requirements")
 @click.option("-m", "--markers", multiple=True, default=[], help="markers")
@@ -54,17 +55,17 @@ def poetry_to_requirements(
     poetry_path: str,
     exclude_specifiers: bool,
     include_comments: bool,
-    exclude: List[str],
     include_dev_requirements: bool,
     extra_requirements: List[str],
     markers: List[str],
 ) -> None:
+    config = Config.from_pyproject_toml()
     poetry = Poetry(poetry_path)
     fn = partial(
         poetry.export_to_requirements_txt,
         include_specifiers=not exclude_specifiers,
         include_comments=include_comments,
-        exclude=exclude,
+        exclude=config.private_packages,
         include_dev_requirements=include_dev_requirements,
         extra_requirements=extra_requirements,
         markers=markers,
