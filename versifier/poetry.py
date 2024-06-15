@@ -3,7 +3,7 @@ import os
 from dataclasses import dataclass
 from subprocess import check_call
 from tempfile import TemporaryDirectory
-from typing import Any, Iterable, List, Set
+from typing import Any, Iterable, List, Optional, Set
 
 from pip_requirements_parser import RequirementsFile
 
@@ -50,6 +50,7 @@ class Poetry:
         requirements_path: str,
         include_dev_requirements: bool = False,
         extra_requirements: Iterable[str] = (),
+        whitelist: Optional[Iterable[str]] = None,
     ) -> None:
         commands = [
             self.poetry_path,
@@ -67,6 +68,16 @@ class Poetry:
             commands.append(f"--extras={r}")
 
         check_call(commands)
+
+        if whitelist is None:
+            return
+
+        package_set = set(whitelist)
+        rf = RequirementsFile.from_file(requirements_path)
+        rf.requirements = [r for r in rf.requirements if r.name in package_set]
+
+        with open(requirements_path, "w") as f:
+            f.write(rf.dumps())
 
     def export_to_requirements_txt(
         self,
@@ -90,8 +101,8 @@ class Poetry:
                 extra_requirements=extra_requirements,
             )
 
-            requirements = RequirementsFile.from_file(requirements_path)
-            for r in requirements.requirements:
+            rf = RequirementsFile.from_file(requirements_path)
+            for r in rf.requirements:
                 if not r.marker.evaluate(marker_dict):
                     continue
 
@@ -106,3 +117,38 @@ class Poetry:
 
                 else:
                     callback(r.req.name)
+
+    def extract_packages(
+        self,
+        output_dir: str,
+        packages: Iterable[str] = (),
+        extra_requirements: Iterable[str] = (),
+    ) -> None:
+        with TemporaryDirectory() as td:
+            requirements_path = os.path.join(td, "requirements.txt")
+
+            self._export_to_requirements_txt_raw(
+                requirements_path,
+                include_dev_requirements=True,
+                extra_requirements=extra_requirements,
+                whitelist=packages,
+            )
+
+            package_path = os.path.join(td, "packages")
+            check_call(
+                [
+                    self.poetry_path,
+                    "run",
+                    "pip",
+                    "install",
+                    "--no-deps",
+                    "--requirement",
+                    requirements_path,
+                    "--target",
+                    package_path,
+                ]
+            )
+
+            for n in os.listdir(package_path):
+                if not n.startswith("_") and not n.endswith(".dist-info"):
+                    os.rename(os.path.join(package_path, n), os.path.join(output_dir, n))

@@ -1,6 +1,7 @@
 import logging
 from functools import partial
 from subprocess import check_call
+from tempfile import TemporaryDirectory
 from typing import List
 
 import click
@@ -59,7 +60,7 @@ def poetry_to_requirements(
     extra_requirements: List[str],
     markers: List[str],
 ) -> None:
-    config = Config.from_pyproject_toml()
+    config = Config.from_toml()
     poetry = Poetry(poetry_path)
     fn = partial(
         poetry.export_to_requirements_txt,
@@ -77,6 +78,21 @@ def poetry_to_requirements(
     else:
         with open(output, "w") as f:
             fn(callback=lambda line: f.write(line + "\n"))
+
+
+@cli.command()
+@click.option("--output", default=".", help="output dir")
+@click.option("--poetry-path", default="poetry", help="path to poetry")
+@click.option("-E", "--extra-requirements", multiple=True, default=[], help="extra requirements")
+def extract_private_packages(
+    output: str,
+    poetry_path: str,
+    extra_requirements: List[str],
+) -> None:
+    config = Config.from_toml()
+    poetry = Poetry(poetry_path)
+
+    poetry.extract_packages(output_dir=output, packages=config.private_packages, extra_requirements=extra_requirements)
 
 
 if __name__ == "__main__":
