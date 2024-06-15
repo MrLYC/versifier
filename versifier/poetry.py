@@ -98,7 +98,10 @@ class Poetry:
                 if r.name in exclude_packages:
                     continue
 
-                if include_specifiers:
+                if include_comments:
+                    callback(r.line)
+
+                elif include_specifiers:
                     callback(str(r.req))
 
                 else:
