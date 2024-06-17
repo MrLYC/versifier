@@ -11,6 +11,9 @@ class Config:
     @classmethod
     def from_toml(cls, path: str = "pyproject.toml") -> "Config":
         with open(path) as f:
-            content = tomli.loads(f.read())
+            config = tomli.loads(f.read())
 
-        return cls(**content["tool"]["versifier"])
+        for k in ["tool", "versifier"]:
+            config = config.get(k) or {}
+
+        return cls(**config)

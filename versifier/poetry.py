@@ -31,7 +31,7 @@ class Poetry:
     ) -> None:
         exclude_packages = set(exclude)
 
-        commands = [self.poetry_path, "add", "--no-interaction"]
+        commands = [self.poetry_path, "add", "--no-interaction", "-vvv"]
 
         requirements_to_add = list(self._iter_requirements(requirements, exclude_packages))
 
