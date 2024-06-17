@@ -14,6 +14,7 @@ click = "8.0.3"
 dataclasses = { version = "0.8", python = "<3.7" }
 pip-requirements-parser = "^32.0.1"
 tomli = "^1.2.3"
+poetry = "1.1.15"
 
 [[tool.poetry.source]]
 name = "tencent"
