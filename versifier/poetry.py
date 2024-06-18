@@ -3,152 +3,111 @@ import os
 from dataclasses import dataclass
 from subprocess import check_call
 from tempfile import TemporaryDirectory
-from typing import Any, Iterable, List, Optional, Set
+from typing import Iterable, Optional
 
-from pip_requirements_parser import RequirementsFile
+import tomli
+from pip_requirements_parser import OptionLine, RequirementLine
+from pip_requirements_parser import RequirementsFile as BaseRequirementsFile
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class Poetry:
-    poetry_path: str
-
-    def _iter_requirements(self, requirements: List[str], exclude_packages: Set[str]) -> Iterable[str]:
-        for n in requirements:
-            requirements_file = RequirementsFile.from_file(n)
-            for r in requirements_file.requirements:
-                if r.name in exclude_packages:
-                    continue
-                yield str(r.req)
-
-    def add_from_requirements_txt(
+class RequirementsFile(BaseRequirementsFile):
+    def filter(
         self,
-        requirements: List[str],
-        dev_requirements: List[str],
-        exclude: Iterable[str] = (),
-        callback: Any = check_call,
-    ) -> None:
-        exclude_packages = set(exclude)
-
-        commands = [self.poetry_path, "add", "--no-interaction", "-vvv"]
-
-        requirements_to_add = list(self._iter_requirements(requirements, exclude_packages))
-
-        if requirements_to_add:
-            logger.info("Adding requirements: %s", requirements_to_add)
-            callback(commands + requirements_to_add)
-
-        dev_requirements_to_add = list(self._iter_requirements(dev_requirements, exclude_packages))
-
-        if dev_requirements_to_add:
-            logger.info("Adding dev requirements: %s", dev_requirements_to_add)
-            callback(commands + ["--dev"] + requirements_to_add)
-
-    def _export_to_requirements_txt_raw(
-        self,
-        requirements_path: str,
-        include_dev_requirements: bool = False,
-        extra_requirements: Iterable[str] = (),
-        whitelist: Optional[Iterable[str]] = None,
-    ) -> None:
-        commands = [
-            self.poetry_path,
-            "export",
-            "--format=requirements.txt",
-            "--without-hashes",
-            "--no-interaction",
-            f"--output={requirements_path}",
-        ]
-
-        if include_dev_requirements:
-            commands.append("--dev")
-
-        for r in extra_requirements:
-            commands.append(f"--extras={r}")
-
-        check_call(commands)
-
-        if whitelist is None:
-            return
-
-        package_set = set(whitelist)
-        rf = RequirementsFile.from_file(requirements_path)
-        rf.requirements = [r for r in rf.requirements if r.name in package_set]
-
-        with open(requirements_path, "w") as f:
-            f.write(rf.dumps())
-
-    def export_to_requirements_txt(
-        self,
-        include_specifiers: bool = True,
-        include_comments: bool = False,
-        include_dev_requirements: bool = False,
-        extra_requirements: Iterable[str] = (),
+        include: Iterable[str] = (),
         exclude: Iterable[str] = (),
         markers: Iterable[str] = (),
-        callback: Any = print,
-    ) -> None:
-        exclude_packages = set(exclude)
+    ) -> "RequirementsFile":
+        includes = set(include)
+        excludes = set(exclude)
         marker_dict = dict(m.split("==", 1) for m in markers)
+        requirements = []
+        for r in self.requirements:
+            if includes and r.name not in includes:
+                continue
 
-        with TemporaryDirectory() as td:
-            requirements_path = os.path.join(td, "requirements.txt")
+            if excludes and r.name in excludes:
+                continue
 
-            self._export_to_requirements_txt_raw(
-                requirements_path,
-                include_dev_requirements=include_dev_requirements,
-                extra_requirements=extra_requirements,
-            )
+            if marker_dict and not r.marker.evaluate(marker_dict):
+                continue
 
-            rf = RequirementsFile.from_file(requirements_path)
-            for r in rf.requirements:
-                if not r.marker.evaluate(marker_dict):
-                    continue
+            requirements.append(r)
 
-                if r.name in exclude_packages:
-                    continue
+        return RequirementsFile(
+            filename=self.filename,
+            requirements=requirements,
+            options=self.options,
+            invalid_lines=self.invalid_lines,
+            comments=self.comments,
+        )
 
-                if include_comments:
-                    callback(r.line)
+    def dump_to(self, filename: str) -> None:
+        with open(filename, "w") as f:
+            f.write(self.dumps())
 
-                elif include_specifiers:
-                    callback(str(r.req))
+    def update_sources(self, path: str = "pyproject.toml") -> None:
+        with open(path, "r") as f:
+            config = tomli.loads(f.read())
 
-                else:
-                    callback(r.req.name)
+        try:
+            sources = config["tool"]["poetry"]["source"]
+        except KeyError:
+            return
 
-    def extract_packages(
+        for source in sources:
+            ol = OptionLine(RequirementLine("", 1), {"extra_index_urls": source["url"]})
+            self.options.append(ol)
+
+    @classmethod
+    def from_file(cls, filename: str) -> "RequirementsFile":
+        rf = BaseRequirementsFile.from_file(filename)
+        return cls(
+            filename=rf.filename,
+            requirements=rf.requirements,
+            options=rf.options,
+            invalid_lines=rf.invalid_lines,
+            comments=rf.comments,
+        )
+
+
+@dataclass
+class Poetry:
+    poetry_path: str = "poetry"
+
+    def add_packages(self, packages: Iterable[str], is_dev: bool = False) -> None:
+        commands = [self.poetry_path, "add", "--no-interaction", "-vvv"]
+
+        if is_dev:
+            commands.append("--dev")
+
+        commands.extend(packages)
+        check_call(commands)
+
+    def export_requirements(
         self,
-        output_dir: str,
-        packages: Iterable[str] = (),
-        extra_requirements: Iterable[str] = (),
-    ) -> None:
+        include_dev_requirements: bool = False,
+        extra_requirements: Optional[Iterable[str]] = None,
+    ) -> RequirementsFile:
         with TemporaryDirectory() as td:
-            requirements_path = os.path.join(td, "requirements.txt")
+            requirement_path = os.path.join(td, "requirements.txt")
 
-            self._export_to_requirements_txt_raw(
-                requirements_path,
-                include_dev_requirements=True,
-                extra_requirements=extra_requirements,
-                whitelist=packages,
-            )
+            commands = [
+                self.poetry_path,
+                "export",
+                "--no-interaction",
+                "--format=requirements.txt",
+                f"--output={requirement_path}",
+            ]
+            if include_dev_requirements:
+                commands.append("--dev")
 
-            package_path = os.path.join(td, "packages")
-            check_call(
-                [
-                    self.poetry_path,
-                    "run",
-                    "pip",
-                    "install",
-                    "--no-deps",
-                    "--requirement",
-                    requirements_path,
-                    "--target",
-                    package_path,
-                ]
-            )
+            if extra_requirements:
+                commands.extend(f"--extras={i}" for i in extra_requirements)
 
-            for n in os.listdir(package_path):
-                if not n.startswith("_") and not n.endswith(".dist-info"):
-                    os.rename(os.path.join(package_path, n), os.path.join(output_dir, n))
+            check_call(commands)
+            rf = RequirementsFile.from_file(requirement_path)
+            rf.update_sources()
+
+        return rf
