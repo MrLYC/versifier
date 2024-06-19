@@ -1,6 +1,9 @@
+import fnmatch
 import logging
 import os
+import shutil
 from dataclasses import dataclass, field
+from itertools import chain
 from subprocess import check_call
 from tempfile import TemporaryDirectory
 from typing import Any, Iterable, List, Set
@@ -69,11 +72,25 @@ class PoetryExtension:
             else:
                 callback(r.req.name)
 
+    def _do_clean_directory(self, path: str, exclude_file_patterns: Iterable[str]) -> None:
+        for root, dirs, files in os.walk(path):
+            for p in chain(dirs, files):
+                filepath = os.path.join(root, p)
+
+                if not os.path.exists(filepath):
+                    continue
+
+                for pattern in exclude_file_patterns:
+                    if fnmatch.fnmatch(filepath, pattern):
+                        shutil.rmtree(filepath)
+                        break
+
     def extract_packages(
         self,
         output_dir: str,
         packages: Iterable[str] = (),
         extra_requirements: Iterable[str] = (),
+        exclude_file_patterns: Iterable[str] = (),
     ) -> None:
         rf = self.poetry.export_requirements(
             extra_requirements=extra_requirements,
@@ -96,6 +113,7 @@ class PoetryExtension:
                 ]
             )
 
+            self._do_clean_directory(package_path, exclude_file_patterns)
+            os.makedirs(output_dir, exist_ok=True)
             for n in os.listdir(package_path):
-                if not n.startswith("_") and not n.endswith(".dist-info"):
-                    os.rename(os.path.join(package_path, n), os.path.join(output_dir, n))
+                os.rename(os.path.join(package_path, n), os.path.join(output_dir, n))

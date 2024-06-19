@@ -72,15 +72,24 @@ def poetry_to_requirements(
 @click.option("--output", default=".", help="output dir")
 @click.option("--poetry-path", default="poetry", help="path to poetry")
 @click.option("-E", "--extra-requirements", multiple=True, default=[], help="extra requirements")
+@click.option(
+    "--exclude-file-patterns", multiple=True, default=["*/*.dist-info", "*/__pycache__"], help="exclude files"
+)
 def extract_private_packages(
     output: str,
     poetry_path: str,
     extra_requirements: List[str],
+    exclude_file_patterns: List[str],
 ) -> None:
     config = Config.from_toml()
     poetry = PoetryExtension()
 
-    poetry.extract_packages(output_dir=output, packages=config.private_packages, extra_requirements=extra_requirements)
+    poetry.extract_packages(
+        output_dir=output,
+        packages=config.private_packages,
+        extra_requirements=extra_requirements,
+        exclude_file_patterns=exclude_file_patterns,
+    )
 
 
 if __name__ == "__main__":
