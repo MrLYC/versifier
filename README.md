@@ -6,45 +6,79 @@
 [![Commit activity](https://img.shields.io/github/commit-activity/m/mrlyc/versifier)](https://img.shields.io/github/commit-activity/m/mrlyc/versifier)
 [![License](https://img.shields.io/github/license/mrlyc/versifier)](https://img.shields.io/github/license/mrlyc/versifier)
 
-Versifier: A lyrical tool to transform Python requirements into Poetry configurations, effortlessly and elegantly.
+## Overview
 
-- **Github repository**: <https://github.com/mrlyc/versifier/>
-- **Documentation** <https://mrlyc.github.io/versifier/>
+这个项目提供了一套命令行工具集，主要用于处理 Python 项目的依赖管理。主要功能包括：
+- 将 requirements.txt 转化为 Poetry 的 pyproject.toml
+- 将 Poetry 的 pyproject.toml 导出为 requirements.txt
+- 将私有包提取到指定目录
 
-## Getting started with your project
+## Installation
 
-First, create a repository on GitHub with the same name as this project, and then run the following commands:
+使用 pip 来安装这个项目：
 
-```bash
-git init -b main
-git add .
-git commit -m "init commit"
-git remote add origin git@github.com:mrlyc/versifier.git
-git push -u origin main
+```shell
+pip install versifier
 ```
 
-Finally, install the environment and the pre-commit hooks with
+## Commands
 
-```bash
-make install
+### requirements_to_poetry
+
+这个命令将 requirements.txt 转化为 Poetry 的 pyproject.toml。
+
+使用方法：
+
+```shell
+requirements_to_poetry -r <requirements> -d <dev_requirements> -e <exclude>
 ```
 
-You are now ready to start development on your project!
-The CI/CD pipeline will be triggered when you open a pull request, merge to main, or when you create a new release.
+参数说明：
 
-To finalize the set-up for publishing to PyPi or Artifactory, see [here](https://fpgmaas.github.io/cookiecutter-poetry/features/publishing/#set-up-for-pypi).
-For activating the automatic documentation with MkDocs, see [here](https://fpgmaas.github.io/cookiecutter-poetry/features/mkdocs/#enabling-the-documentation-on-github).
-To enable the code coverage reports, see [here](https://fpgmaas.github.io/cookiecutter-poetry/features/codecov/).
+- `-r, --requirements`：指定一个或多个 requirements 文件。
+- `-d, --dev-requirements`：指定一个或多个 dev requirements 文件。
+- `-e, --exclude`：指定需要排除的包。
 
-## Releasing a new version
+### poetry_to_requirements
 
-- Create an API Token on [Pypi](https://pypi.org/).
-- Add the API Token to your projects secrets with the name `PYPI_TOKEN` by visiting [this page](https://github.com/mrlyc/versifier/settings/secrets/actions/new).
-- Create a [new release](https://github.com/mrlyc/versifier/releases/new) on Github.
-- Create a new tag in the form `*.*.*`.
+这个命令将 Poetry 的 pyproject.toml 导出为 requirements.txt。
 
-For more details, see [here](https://fpgmaas.github.io/cookiecutter-poetry/features/cicd/#how-to-trigger-a-release).
+使用方法：
 
----
+```shell
+poetry_to_requirements -o <output> --exclude-specifiers --include-comments -d -E <extra_requirements> -m <markers>
+```
 
-Repository initiated with [fpgmaas/cookiecutter-poetry](https://github.com/fpgmaas/cookiecutter-poetry).
+参数说明：
+
+- `-o, --output`：输出文件的路径。如果不指定，将直接打印到控制台。
+- `--exclude-specifiers`：如果指定，将排除版本规定。
+- `--include-comments`：如果指定，将包含注释。
+- `-d, --include-dev-requirements`：如果指定，将包含 dev requirements。
+- `-E, --extra-requirements`：指定额外的 requirements。
+- `-m, --markers`：指定 markers。
+
+### extract_private_packages
+
+这个命令用于提取私有包。
+
+使用方法：
+
+```shell
+extract_private_packages --output <output_dir> --poetry-path <poetry_path> -E <extra_requirements> --exclude-file-patterns <exclude_patterns>
+```
+
+参数说明：
+
+- `--output`：输出目录的路径。
+- `--poetry-path`：Poetry 的路径。
+- `-E, --extra-requirements`：指定额外的 requirements。
+- `--exclude-file-patterns`：指定需要排除的文件模式。
+
+## License
+
+此项目使用 MIT 许可证。有关详细信息，请参阅 LICENSE 文件。
+
+## Contributing
+
+我们欢迎各种形式的贡献，包括报告问题、提出新功能、改进文档或提交代码更改。如果你想要贡献，请查看 CONTRIBUTING.md 获取更多信息。
