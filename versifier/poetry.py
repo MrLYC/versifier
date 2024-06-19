@@ -76,11 +76,14 @@ class RequirementsFile(BaseRequirementsFile):
 class Poetry:
     poetry_path: str = "poetry"
 
-    def add_packages(self, packages: Iterable[str], is_dev: bool = False) -> None:
-        commands = [self.poetry_path, "add", "--no-interaction", "-vvv"]
+    def add_packages(self, packages: Iterable[str], is_dev: bool = False, lock_only: bool = True) -> None:
+        commands = [self.poetry_path, "add", "--no-interaction"]
 
         if is_dev:
             commands.append("--dev")
+
+        if lock_only:
+            commands.append("--lock")
 
         commands.extend(packages)
         check_call(commands)

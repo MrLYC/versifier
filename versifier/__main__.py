@@ -1,7 +1,5 @@
 import logging
 from functools import partial
-from subprocess import check_call
-from tempfile import TemporaryDirectory
 from typing import List
 
 import click
@@ -27,9 +25,6 @@ def requirements_to_poetry(
     dev_requirements: List[str],
     exclude: List[str],
 ) -> None:
-    def fake_check_call(commands: List[str]) -> None:
-        logger.info("Would run: %s", commands)
-
     poetry = PoetryExtension()
     poetry.add_from_requirements_txt(
         requirements,
