@@ -2,20 +2,30 @@ import fnmatch
 import logging
 import os
 import shutil
-from dataclasses import dataclass, field
+from dataclasses import InitVar, dataclass, field
 from itertools import chain
 from subprocess import check_call
 from tempfile import TemporaryDirectory
 from typing import Any, Iterable, List, Set
 
+from .compiler import Compiler
 from .poetry import Poetry, RequirementsFile
 
 logger = logging.getLogger(__name__)
+_default_exclude_patterns = ("*/*.dist-info", "*/__pycache__")
 
 
 @dataclass
 class PoetryExtension:
-    poetry: Poetry = field(default_factory=Poetry)
+    poetry_path: InitVar[str] = "poetry"
+    nuitka_path: InitVar[str] = "nuitka3"
+
+    poetry: Poetry = field(init=False)
+    compiler: Compiler = field(init=False)
+
+    def __post_init__(self, poetry_path: str, nuitka_path: str) -> None:
+        self.poetry = Poetry(poetry_path)
+        self.compiler = Compiler(nuitka_path)
 
     def _merge_requirements(self, requirements: List[str], exclude: Iterable[str] = ()) -> Set[str]:
         results: Set[str] = set()
@@ -90,7 +100,7 @@ class PoetryExtension:
         output_dir: str,
         packages: Iterable[str] = (),
         extra_requirements: Iterable[str] = (),
-        exclude_file_patterns: Iterable[str] = (),
+        exclude_file_patterns: Iterable[str] = _default_exclude_patterns,
     ) -> None:
         rf = self.poetry.export_requirements(
             extra_requirements=extra_requirements,
@@ -117,3 +127,21 @@ class PoetryExtension:
             os.makedirs(output_dir, exist_ok=True)
             for n in os.listdir(package_path):
                 os.rename(os.path.join(package_path, n), os.path.join(output_dir, n))
+
+    def compile_packages(
+        self,
+        output_dir: str,
+        packages: Iterable[str] = (),
+        extra_requirements: Iterable[str] = (),
+    ) -> None:
+        with TemporaryDirectory() as td:
+            self.extract_packages(
+                td,
+                packages=packages,
+                extra_requirements=extra_requirements,
+                exclude_file_patterns=_default_exclude_patterns,
+            )
+
+            for package in os.listdir(td):
+                package_path = os.path.join(td, package)
+                self.compiler.compile_package(output_dir, package_path, package)

@@ -22,58 +22,62 @@ pip install versifier
 ```
 
 ## Commands
-
 ### requirements_to_poetry
 
-这个命令将 requirements.txt 转化为 Poetry 的 pyproject.toml。
+此命令将requirements.txt文件转换为Poetry格式。
 
-使用方法：
-
-```shell
-requirements_to_poetry -r <requirements> -d <dev_requirements> -e <exclude>
+```bash
+your_package requirements_to_poetry --poetry-path <path_to_poetry> -r <requirements_files> -d <dev_requirements_files> -e <exclude_packages>
 ```
 
-参数说明：
-
-- `-r, --requirements`：指定一个或多个 requirements 文件。
-- `-d, --dev-requirements`：指定一个或多个 dev requirements 文件。
-- `-e, --exclude`：指定需要排除的包。
+- `--poetry-path`: 指明Poetry的路径。默认为 "poetry"。
+- `-r, --requirements`: 一个或多个requirements文件。
+- `-d, --dev-requirements`: 一个或多个开发需求文件。
+- `-e, --exclude`: 需要排除的包。
 
 ### poetry_to_requirements
 
-这个命令将 Poetry 的 pyproject.toml 导出为 requirements.txt。
+此命令将Poetry依赖项导出到requirements.txt格式。
 
-使用方法：
-
-```shell
-poetry_to_requirements -o <output> --exclude-specifiers --include-comments -d -E <extra_requirements> -m <markers>
+```bash
+your_package poetry_to_requirements -o <output_file> --poetry-path <path_to_poetry> --exclude-specifiers --include-comments -d -E <extra_requirements> -m <markers>
 ```
 
-参数说明：
-
-- `-o, --output`：输出文件的路径。如果不指定，将直接打印到控制台。
-- `--exclude-specifiers`：如果指定，将排除版本规定。
-- `--include-comments`：如果指定，将包含注释。
-- `-d, --include-dev-requirements`：如果指定，将包含 dev requirements。
-- `-E, --extra-requirements`：指定额外的 requirements。
-- `-m, --markers`：指定 markers。
+- `-o, --output`: 指明输出文件。如果未提供，则输出打印到控制台。
+- `--poetry-path`: 指明Poetry的路径。默认为 "poetry"。
+- `--exclude-specifiers`: 排除说明符。
+- `--include-comments`: 包括评论。
+- `-d, --include-dev-requirements`: 包括开发需求。
+- `-E, --extra-requirements`: 额外的需求。
+- `-m, --markers`: 标记。
 
 ### extract_private_packages
 
-这个命令用于提取私有包。
+此命令提取私有包。
 
-使用方法：
-
-```shell
-extract_private_packages --output <output_dir> --poetry-path <poetry_path> -E <extra_requirements> --exclude-file-patterns <exclude_patterns>
+```bash
+your_package extract_private_packages --output <output_dir> --poetry-path <path_to_poetry> -E <extra_requirements> --exclude-file-patterns <exclude_files>
 ```
 
-参数说明：
+- `--output`: 指明输出目录。默认为当前目录。
+- `--poetry-path`: 指明Poetry的路径。默认为 "poetry"。
+- `-E, --extra-requirements`: 额外的需求。
+- `--exclude-file-patterns`: 需要排除的文件。
 
-- `--output`：输出目录的路径。
-- `--poetry-path`：Poetry 的路径。
-- `-E, --extra-requirements`：指定额外的 requirements。
-- `--exclude-file-patterns`：指定需要排除的文件模式。
+### compile_private_packages
+
+此命令编译私有包。
+
+```bash
+your_package compile_private_packages --output <output_dir> --poetry-path <path_to_poetry> --nuitka-path <path_to_nuitka3> -E <extra_requirements>
+```
+
+- `--output`: 指明输出目录。默认为当前目录。
+- `--poetry-path`: 指明Poetry的路径。默认为 "poetry"。
+- `--nuitka-path`: 指明nuitka3的路径。默认为 "nuitka3"。
+- `-E, --extra-requirements`: 额外的需求。
+
+在运行命令时，请将 'your_package' 替换为实际的包名。
 
 ## License
 

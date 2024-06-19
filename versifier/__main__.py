@@ -17,16 +17,18 @@ def cli() -> None:
 
 
 @cli.command()
+@click.option("--poetry-path", default="poetry", help="path to poetry")
 @click.option("-r", "--requirements", multiple=True, default=[], help="requirements files")
 @click.option("-d", "--dev-requirements", multiple=True, default=[], help="dev requirements files")
 @click.option("-e", "--exclude", multiple=True, default=[], help="exclude packages")
 def requirements_to_poetry(
+    poetry_path: str,
     requirements: List[str],
     dev_requirements: List[str],
     exclude: List[str],
 ) -> None:
-    poetry = PoetryExtension()
-    poetry.add_from_requirements_txt(
+    ext = PoetryExtension(poetry_path=poetry_path)
+    ext.add_from_requirements_txt(
         requirements,
         dev_requirements,
         exclude,
@@ -35,6 +37,7 @@ def requirements_to_poetry(
 
 @cli.command()
 @click.option("-o", "--output", default="", help="output file")
+@click.option("--poetry-path", default="poetry", help="path to poetry")
 @click.option("--exclude-specifiers", is_flag=True, help="exclude specifiers")
 @click.option("--include-comments", is_flag=True, help="include comments")
 @click.option("-d", "--include-dev-requirements", is_flag=True, help="include dev requirements")
@@ -42,6 +45,7 @@ def requirements_to_poetry(
 @click.option("-m", "--markers", multiple=True, default=[], help="markers")
 def poetry_to_requirements(
     output: str,
+    poetry_path: str,
     exclude_specifiers: bool,
     include_comments: bool,
     include_dev_requirements: bool,
@@ -49,9 +53,9 @@ def poetry_to_requirements(
     markers: List[str],
 ) -> None:
     config = Config.from_toml()
-    poetry = PoetryExtension()
+    ext = PoetryExtension(poetry_path=poetry_path)
     fn = partial(
-        poetry.export_to_requirements_txt,
+        ext.export_to_requirements_txt,
         include_specifiers=not exclude_specifiers,
         include_comments=include_comments,
         exclude=config.private_packages,
@@ -72,9 +76,7 @@ def poetry_to_requirements(
 @click.option("--output", default=".", help="output dir")
 @click.option("--poetry-path", default="poetry", help="path to poetry")
 @click.option("-E", "--extra-requirements", multiple=True, default=[], help="extra requirements")
-@click.option(
-    "--exclude-file-patterns", multiple=True, default=["*/*.dist-info", "*/__pycache__"], help="exclude files"
-)
+@click.option("--exclude-file-patterns", multiple=True, default=[], help="exclude files")
 def extract_private_packages(
     output: str,
     poetry_path: str,
@@ -82,13 +84,33 @@ def extract_private_packages(
     exclude_file_patterns: List[str],
 ) -> None:
     config = Config.from_toml()
-    poetry = PoetryExtension()
+    ext = PoetryExtension(poetry_path=poetry_path)
 
-    poetry.extract_packages(
+    ext.extract_packages(
         output_dir=output,
         packages=config.private_packages,
         extra_requirements=extra_requirements,
         exclude_file_patterns=exclude_file_patterns,
+    )
+
+
+@cli.command()
+@click.option("--output", default=".", help="output dir")
+@click.option("--poetry-path", default="poetry", help="path to poetry")
+@click.option("--nuitka-path", default="nuitka3", help="path to nuitka3")
+@click.option("-E", "--extra-requirements", multiple=True, default=[], help="extra requirements")
+def compile_private_packages(
+    output: str,
+    poetry_path: str,
+    nuitka_path: str,
+    extra_requirements: List[str],
+) -> None:
+    config = Config.from_toml()
+    ext = PoetryExtension(poetry_path=poetry_path, nuitka_path=nuitka_path)
+    ext.compile_packages(
+        output_dir=output,
+        packages=config.private_packages,
+        extra_requirements=extra_requirements,
     )
 
 

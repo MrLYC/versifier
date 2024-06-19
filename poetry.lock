@@ -99,6 +99,35 @@ url = "https://mirrors.cloud.tencent.com/pypi/simple"
 reference = "tencent"
 
 [[package]]
+name = "nuitka"
+version = "2.3.7"
+description = "Python compiler with full language support and CPython compatibility"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+orderedset = ">=2.0.3"
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.cloud.tencent.com/pypi/simple"
+reference = "tencent"
+
+[[package]]
+name = "orderedset"
+version = "2.0.3"
+description = "An Ordered Set implementation in Cython."
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.cloud.tencent.com/pypi/simple"
+reference = "tencent"
+
+[[package]]
 name = "packaging"
 version = "20.9"
 description = "Core utilities for Python packages"
@@ -210,7 +239,7 @@ reference = "tencent"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.6.2,<4.0"
-content-hash = "48de70d6c97ff26ab1134320a54c3e44baf68bae6848a921d2af31d182f8a098"
+content-hash = "85fa1812c20d084740272c33f8468a345a0129d40610b55c4778c1d2e9fce1ae"
 
 [metadata.files]
 click = [
@@ -257,6 +286,12 @@ mypy = [
 mypy-extensions = [
     {file = "mypy_extensions-1.0.0-py3-none-any.whl", hash = "sha256:4392f6c0eb8a5668a69e23d168ffa70f0be9ccfd32b5cc2d26a34ae5b844552d"},
     {file = "mypy_extensions-1.0.0.tar.gz", hash = "sha256:75dbf8955dc00442a438fc4d0666508a9a97b6bd41aa2f0ffe9d2f2725af0782"},
+]
+nuitka = [
+    {file = "Nuitka-2.3.7.tar.gz", hash = "sha256:7ab7cacb947943f12b99840a65c952e90ea949bfadc8fb8ebd5946b7bb53025f"},
+]
+orderedset = [
+    {file = "orderedset-2.0.3.tar.gz", hash = "sha256:b2f5ccfb5a86e7b3b3ddf18b29779cc18b24653abf9d6da4bebecf33780a6e29"},
 ]
 packaging = [
     {file = "packaging-20.9-py2.py3-none-any.whl", hash = "sha256:67714da7f7bc052e064859c05c595155bd1ee9f69f76557e21f051443c20947a"},
