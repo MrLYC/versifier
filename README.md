@@ -49,7 +49,8 @@ versifier poetry_to_requirements -o <output_file> --poetry-path <path_to_poetry>
 - `--include-comments`: 包括评论。
 - `-d, --include-dev-requirements`: 包括开发需求。
 - `-E, --extra-requirements`: 额外的需求。
-- `-m, --markers`: 标记。
+- `-m, --markers`: 过滤标记。
+- `-P, --private-packages`：私有包列表。
 
 ### extract_private_packages
 
@@ -63,6 +64,7 @@ versifier extract_private_packages --output <output_dir> --poetry-path <path_to_
 - `--poetry-path`: 指明Poetry的路径。默认为 "poetry"。
 - `-E, --extra-requirements`: 额外的需求。
 - `--exclude-file-patterns`: 需要排除的文件。
+- `-P, --private-packages`：私有包列表。
 
 ### compile_private_packages
 
@@ -76,6 +78,7 @@ versifier compile_private_packages --output <output_dir> --poetry-path <path_to_
 - `--poetry-path`: 指明Poetry的路径。默认为 "poetry"。
 - `--nuitka-path`: 指明nuitka3的路径。默认为 "nuitka3"。
 - `-E, --extra-requirements`: 额外的需求。
+- `-P, --private-packages`：私有包列表。
 
 ## License
 

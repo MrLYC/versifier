@@ -6,7 +6,7 @@ import click
 
 from versifier.core import PoetryExtension
 
-from .config import Config
+from .config import get_private_packages_from_pyproject
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +43,9 @@ def requirements_to_poetry(
 @click.option("-d", "--include-dev-requirements", is_flag=True, help="include dev requirements")
 @click.option("-E", "--extra-requirements", multiple=True, default=[], help="extra requirements")
 @click.option("-m", "--markers", multiple=True, default=[], help="markers")
+@click.option(
+    "-P", "--private-packages", multiple=True, default=get_private_packages_from_pyproject, help="private packages"
+)
 def poetry_to_requirements(
     output: str,
     poetry_path: str,
@@ -51,14 +54,14 @@ def poetry_to_requirements(
     include_dev_requirements: bool,
     extra_requirements: List[str],
     markers: List[str],
+    private_packages: List[str],
 ) -> None:
-    config = Config.from_toml()
     ext = PoetryExtension(poetry_path=poetry_path)
     fn = partial(
         ext.export_to_requirements_txt,
         include_specifiers=not exclude_specifiers,
         include_comments=include_comments,
-        exclude=config.private_packages,
+        exclude=private_packages,
         include_dev_requirements=include_dev_requirements,
         extra_requirements=extra_requirements,
         markers=markers,
@@ -77,18 +80,21 @@ def poetry_to_requirements(
 @click.option("--poetry-path", default="poetry", help="path to poetry")
 @click.option("-E", "--extra-requirements", multiple=True, default=[], help="extra requirements")
 @click.option("--exclude-file-patterns", multiple=True, default=[], help="exclude files")
+@click.option(
+    "-P", "--private-packages", multiple=True, default=get_private_packages_from_pyproject, help="private packages"
+)
 def extract_private_packages(
     output: str,
     poetry_path: str,
     extra_requirements: List[str],
     exclude_file_patterns: List[str],
+    private_packages: List[str],
 ) -> None:
-    config = Config.from_toml()
     ext = PoetryExtension(poetry_path=poetry_path)
 
     ext.extract_packages(
         output_dir=output,
-        packages=config.private_packages,
+        packages=private_packages,
         extra_requirements=extra_requirements,
         exclude_file_patterns=exclude_file_patterns,
     )
@@ -99,17 +105,20 @@ def extract_private_packages(
 @click.option("--poetry-path", default="poetry", help="path to poetry")
 @click.option("--nuitka-path", default="nuitka3", help="path to nuitka3")
 @click.option("-E", "--extra-requirements", multiple=True, default=[], help="extra requirements")
+@click.option(
+    "-P", "--private-packages", multiple=True, default=get_private_packages_from_pyproject, help="private packages"
+)
 def compile_private_packages(
     output: str,
     poetry_path: str,
     nuitka_path: str,
     extra_requirements: List[str],
+    private_packages: List[str],
 ) -> None:
-    config = Config.from_toml()
     ext = PoetryExtension(poetry_path=poetry_path, nuitka_path=nuitka_path)
     ext.compile_packages(
         output_dir=output,
-        packages=config.private_packages,
+        packages=private_packages,
         extra_requirements=extra_requirements,
     )
 
