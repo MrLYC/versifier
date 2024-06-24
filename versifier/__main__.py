@@ -7,7 +7,7 @@ import click
 from versifier import core
 
 from .compiler import Compiler
-from .config import get_private_packages_from_pyproject, get_site_packages_path
+from .config import get_available_packages, get_private_packages_from_pyproject, get_site_packages_path
 from .poetry import Poetry
 
 logger = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ def poetry_to_requirements(
 
 
 @cli.command()
-@click.option("--output", default=".", help="output dir")
+@click.option("-o", "--output", default=".", help="output dir")
 @click.option("--poetry-path", default="poetry", help="path to poetry")
 @click.option("-E", "--extra-requirements", multiple=True, default=[], help="extra requirements")
 @click.option("--exclude-file-patterns", multiple=True, default=[], help="exclude files")
@@ -102,7 +102,7 @@ def extract_private_packages(
 
 
 @cli.command()
-@click.option("--output", default=".", help="output dir")
+@click.option("-o", "--output", default=".", help="output dir")
 @click.option("--poetry-path", default="poetry", help="path to poetry")
 @click.option("--nuitka-path", default="nuitka3", help="path to nuitka3")
 @click.option("-E", "--extra-requirements", multiple=True, default=[], help="extra requirements")
@@ -126,20 +126,20 @@ def compile_private_packages(
 
 @cli.command()
 @click.option("--nuitka-path", default="nuitka3", help="path to nuitka3")
-@click.option("--root-dir", default=get_site_packages_path, help="root dir")
-@click.option("--output-dir", default=None, help="output dir")
-@click.option("-P", "--packages", multiple=True, default=get_private_packages_from_pyproject, help="private packages")
+@click.option("-r", "--root", default=get_site_packages_path, help="root dir")
+@click.option("-o", "--output", default=None, help="output dir")
+@click.option("-p", "--packages", multiple=True, default=get_available_packages, help="private packages")
 def obfuscate_packages(
     nuitka_path: str,
-    root_dir: str,
-    output_dir: Optional[str],
+    root: str,
+    output: Optional[str],
     packages: List[str],
 ) -> None:
     ext = core.PackageObfuscator(compiler=Compiler(nuitka_path))
     ext.obfuscate_packages(
         packages=packages,
-        root_dir=root_dir,
-        output_dir=output_dir,
+        root_dir=root,
+        output_dir=output,
     )
 
 

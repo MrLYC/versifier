@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 from typing import List
 
 import tomli
@@ -20,3 +21,10 @@ def get_site_packages_path() -> str:
             return p
 
     return ""
+
+
+def get_available_packages(path: str) -> List[str]:
+    root = Path(path)
+    path_set = set(str(i.parent) for i in root.glob("*/*.py"))
+
+    return list(path_set)

@@ -60,7 +60,7 @@ versifier poetry-to-requirements -o <output_file> --poetry-path <path_to_poetry>
 versifier extract-private-packages --output <output_dir> --poetry-path <path_to_poetry> -E <extra_requirements> --exclude-file-patterns <exclude_files>
 ```
 
-- `--output`: 指明输出目录。默认为当前目录。
+- `-o, --output`: 指明输出目录。默认为当前目录。
 - `--poetry-path`: 指明Poetry的路径。默认为 "poetry"。
 - `-E, --extra-requirements`: 额外的需求。
 - `--exclude-file-patterns`: 需要排除的文件。
@@ -74,7 +74,7 @@ versifier extract-private-packages --output <output_dir> --poetry-path <path_to_
 versifier compile-private-packages --output <output_dir> --poetry-path <path_to_poetry> --nuitka-path <path_to_nuitka3> -E <extra_requirements>
 ```
 
-- `--output`: 指明输出目录。默认为当前目录。
+- `-o, --output`: 指明输出目录。默认为当前目录。
 - `--poetry-path`: 指明Poetry的路径。默认为 "poetry"。
 - `--nuitka-path`: 指明nuitka3的路径。默认为 "nuitka3"。
 - `-E, --extra-requirements`: 额外的需求。
@@ -90,9 +90,9 @@ versifier obfuscate-packages --nuitka-path <path_to_nuitka3> --root-dir <root_di
 ```
 
 - `--nuitka-path`: 指明nuitka3的路径。默认为 "nuitka3"。
-- `--root-dir`: 指明根目录。默认为当前目录。
-- `--output-dir`: 指明输出目录。默认为当前目录。
-- `-P, --private-packages`：私有包列表。
+- `-r, --root`: 指明根目录。默认为当前目录。
+- `-o, --output`: 指明输出目录。默认为当前目录。
+- `-p, --private-packages`：私有包列表。
 
 ## License
 
