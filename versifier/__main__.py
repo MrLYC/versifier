@@ -7,7 +7,7 @@ import click
 from versifier import core
 
 from .compiler import Compiler
-from .config import get_available_packages, get_private_packages_from_pyproject, get_site_packages_path
+from .config import get_private_packages_from_pyproject, get_site_packages_path, list_all_packages
 from .poetry import Poetry
 
 logger = logging.getLogger(__name__)
@@ -136,7 +136,7 @@ def obfuscate_packages(
     packages: List[str],
 ) -> None:
     if not packages:
-        packages = get_available_packages(root)
+        packages = list_all_packages(root)
 
     ext = core.PackageObfuscator(compiler=Compiler(nuitka_path))
     ext.obfuscate_packages(

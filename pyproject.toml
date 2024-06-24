@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "versifier"
-version = "0.1.2"
+version = "0.1.3"
 description = "Versifier: A lyrical tool to transform Python requirements into Poetry configurations, effortlessly and elegantly."
 authors = ["MrLYC <fx@m.mrlyc.com>"]
 repository = "https://github.com/mrlyc/versifier"
