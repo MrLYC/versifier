@@ -163,9 +163,12 @@ class PackageObfuscator:
     ) -> None:
         in_replace = False
         packages = packages or os.listdir(root_dir)
+        temporary_dirs = []
 
         if output_dir is None:
-            output_dir = TemporaryDirectory().name
+            td = TemporaryDirectory()
+            temporary_dirs.append(td)
+            output_dir = td.name
             in_replace = True
 
         collected_packages = self.compiler.compile_all_packages(root_dir, output_dir, packages)

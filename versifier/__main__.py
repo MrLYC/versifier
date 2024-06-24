@@ -128,13 +128,16 @@ def compile_private_packages(
 @click.option("--nuitka-path", default="nuitka3", help="path to nuitka3")
 @click.option("-r", "--root", default=get_site_packages_path, help="root dir")
 @click.option("-o", "--output", default=None, help="output dir")
-@click.option("-p", "--packages", multiple=True, default=get_available_packages, help="private packages")
+@click.option("-p", "--packages", multiple=True, default=None, help="private packages")
 def obfuscate_packages(
     nuitka_path: str,
     root: str,
     output: Optional[str],
     packages: List[str],
 ) -> None:
+    if not packages:
+        packages = get_available_packages(root)
+
     ext = core.PackageObfuscator(compiler=Compiler(nuitka_path))
     ext.obfuscate_packages(
         packages=packages,

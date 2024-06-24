@@ -23,7 +23,7 @@ def get_site_packages_path() -> str:
     return ""
 
 
-def get_available_packages(path: str) -> List[str]:
+def get_available_packages(path: str = ".") -> List[str]:
     root = Path(path)
     path_set = set(str(i.parent) for i in root.glob("*/*.py"))
 
