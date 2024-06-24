@@ -2,30 +2,20 @@ import fnmatch
 import logging
 import os
 import shutil
-from dataclasses import InitVar, dataclass, field
+from dataclasses import dataclass
 from itertools import chain
-from subprocess import check_call
 from tempfile import TemporaryDirectory
-from typing import Any, Iterable, List, Set
+from typing import Any, Iterable, List, Optional, Set
 
 from .compiler import Compiler
 from .poetry import Poetry, RequirementsFile
 
 logger = logging.getLogger(__name__)
-_default_exclude_patterns = ("*/*.dist-info", "*/__pycache__")
 
 
 @dataclass
-class PoetryExtension:
-    poetry_path: InitVar[str] = "poetry"
-    nuitka_path: InitVar[str] = "nuitka3"
-
-    poetry: Poetry = field(init=False)
-    compiler: Compiler = field(init=False)
-
-    def __post_init__(self, poetry_path: str, nuitka_path: str) -> None:
-        self.poetry = Poetry(poetry_path)
-        self.compiler = Compiler(nuitka_path)
+class DependencyManager:
+    poetry: Poetry
 
     def _merge_requirements(self, requirements: List[str], exclude: Iterable[str] = ()) -> Set[str]:
         results: Set[str] = set()
@@ -57,6 +47,11 @@ class PoetryExtension:
             logger.info("Adding dev requirements: %s", dev_requirements_to_add)
             self.poetry.add_packages(dev_requirements_to_add, is_dev=True)
 
+
+@dataclass
+class DependencyExporter:
+    poetry: Poetry
+
     def export_to_requirements_txt(
         self,
         include_specifiers: bool = True,
@@ -82,6 +77,11 @@ class PoetryExtension:
             else:
                 callback(r.req.name)
 
+
+@dataclass
+class PackageExtractor:
+    poetry: Poetry
+
     def _do_clean_directory(self, path: str, exclude_file_patterns: Iterable[str]) -> None:
         for root, dirs, files in os.walk(path):
             for p in chain(dirs, files):
@@ -100,8 +100,10 @@ class PoetryExtension:
         output_dir: str,
         packages: Iterable[str] = (),
         extra_requirements: Iterable[str] = (),
-        exclude_file_patterns: Iterable[str] = _default_exclude_patterns,
+        exclude_file_patterns: Iterable[str] = (),
     ) -> None:
+        exclude_file_patterns = exclude_file_patterns or ("*/*.dist-info", "*/__pycache__")
+
         rf = self.poetry.export_requirements(
             extra_requirements=extra_requirements,
             include_dev_requirements=True,
@@ -111,7 +113,7 @@ class PoetryExtension:
             requirements_path = os.path.join(td, "requirements.txt")
             rf.dump_to(requirements_path)
             package_path = os.path.join(td, "packages")
-            check_call(
+            self.poetry.run_command(
                 [
                     "pip",
                     "install",
@@ -128,6 +130,11 @@ class PoetryExtension:
             for n in os.listdir(package_path):
                 os.rename(os.path.join(package_path, n), os.path.join(output_dir, n))
 
+
+@dataclass
+class PackageCompiler(PackageExtractor):
+    compiler: Compiler
+
     def compile_packages(
         self,
         output_dir: str,
@@ -139,9 +146,35 @@ class PoetryExtension:
                 td,
                 packages=packages,
                 extra_requirements=extra_requirements,
-                exclude_file_patterns=_default_exclude_patterns,
             )
 
-            for package in os.listdir(td):
-                package_path = os.path.join(td, package)
-                self.compiler.compile_package(output_dir, package_path, package)
+            self.compiler.compile_all_packages(td, output_dir)
+
+
+@dataclass
+class PackageObfuscator:
+    compiler: Compiler
+
+    def obfuscate_packages(
+        self,
+        packages: Iterable[str],
+        root_dir: str,
+        output_dir: Optional[str] = None,
+    ) -> None:
+        in_replace = False
+        packages = packages or os.listdir(root_dir)
+
+        if output_dir is None:
+            output_dir = TemporaryDirectory().name
+            in_replace = True
+
+        collected_packages = self.compiler.compile_all_packages(root_dir, output_dir, packages)
+
+        if not in_replace:
+            return
+
+        for output in os.listdir(output_dir):
+            shutil.move(os.path.join(output_dir, output), root_dir)
+
+        for p in collected_packages:
+            shutil.rmtree(p)

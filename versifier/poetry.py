@@ -3,7 +3,7 @@ import os
 from dataclasses import dataclass
 from subprocess import check_call
 from tempfile import TemporaryDirectory
-from typing import Iterable, Optional
+from typing import Iterable, List, Optional
 
 import tomli
 from pip_requirements_parser import OptionLine, RequirementLine
@@ -114,3 +114,21 @@ class Poetry:
             rf.update_sources()
 
         return rf
+
+    def install(
+        self, include_dev_requirements: bool = False, extra_requirements: Optional[Iterable[str]] = None
+    ) -> None:
+        commands = [self.poetry_path, "install", "--no-interaction"]
+
+        if include_dev_requirements:
+            commands.append("--dev")
+
+        if extra_requirements:
+            commands.extend(f"--extras={i}" for i in extra_requirements)
+
+        check_call(commands)
+
+    def run_command(self, args: List[str]) -> None:
+        commands = [self.poetry_path, "run"]
+        commands.extend(args)
+        check_call(commands)
