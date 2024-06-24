@@ -177,4 +177,7 @@ class PackageObfuscator:
             shutil.move(os.path.join(output_dir, output), root_dir)
 
         for p in collected_packages:
-            shutil.rmtree(p)
+            if os.path.isdir(p):
+                shutil.rmtree(p)
+            else:
+                os.remove(p)

@@ -7,7 +7,7 @@ import click
 from versifier import core
 
 from .compiler import Compiler
-from .config import get_private_packages_from_pyproject
+from .config import get_private_packages_from_pyproject, get_site_packages_path
 from .poetry import Poetry
 
 logger = logging.getLogger(__name__)
@@ -125,13 +125,11 @@ def compile_private_packages(
 
 
 @cli.command()
-@click.option("--output", default=".", help="output dir")
 @click.option("--nuitka-path", default="nuitka3", help="path to nuitka3")
-@click.option("--packages", multiple=True, required=True, help="packages")
-@click.option("--root-dir", default=".", help="root dir")
+@click.option("--root-dir", default=get_site_packages_path, help="root dir")
 @click.option("--output-dir", default=None, help="output dir")
+@click.option("-P", "--packages", multiple=True, default=get_private_packages_from_pyproject, help="private packages")
 def obfuscate_packages(
-    output: str,
     nuitka_path: str,
     root_dir: str,
     output_dir: Optional[str],
