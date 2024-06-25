@@ -24,7 +24,7 @@ pip install versifier
 ## Commands
 ### requirements-to-poetry
 
-此命令将requirements.txt文件转换为Poetry格式。
+此命令将requirements.txt文件转换为Poetry格式，默认情况下会自动初始化Poetry环境。
 
 ```bash
 versifier requirements-to-poetry --poetry-path <path_to_poetry> -r <requirements_files> -d <dev_requirements_files> -e <exclude_packages>
@@ -34,6 +34,7 @@ versifier requirements-to-poetry --poetry-path <path_to_poetry> -r <requirements
 - `-r, --requirements`: 一个或多个requirements文件。
 - `-d, --dev-requirements`: 一个或多个开发需求文件。
 - `-e, --exclude`: 需要排除的包。
+- `--add-only`: 只添加依赖，不进行初始化。
 
 ### poetry-to-requirements
 

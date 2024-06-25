@@ -132,3 +132,8 @@ class Poetry:
         commands = [self.poetry_path, "run"]
         commands.extend(args)
         check_call(commands)
+
+    def init_if_needed(self) -> None:
+        if os.path.exists("poetry.lock"):
+            return
+        check_call([self.poetry_path, "init"])

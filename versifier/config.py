@@ -5,12 +5,20 @@ from typing import List
 import tomli
 
 
-def get_private_packages_from_pyproject(path: str = "pyproject.toml") -> List[str]:
+def get_private_packages_from_pyproject(path: str) -> List[str]:
+    if not Path(path).exists():
+        return []
+
     with open(path) as f:
         config = tomli.loads(f.read())
 
     try:
         return config["tool"]["versifier"]["private_packages"]  # type: ignore
+    except KeyError:
+        pass
+
+    try:
+        return config["versifier"]["private_packages"]  # type: ignore
     except KeyError:
         return []
 
