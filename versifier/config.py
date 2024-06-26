@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 from typing import List
 
-import tomli
+import toml
 
 
 def get_private_packages_from_pyproject(path: str) -> List[str]:
@@ -10,7 +10,7 @@ def get_private_packages_from_pyproject(path: str) -> List[str]:
         return []
 
     with open(path) as f:
-        config = tomli.loads(f.read())
+        config = toml.loads(f.read())
 
     try:
         return config["tool"]["versifier"]["private_packages"]  # type: ignore
