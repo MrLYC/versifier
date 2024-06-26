@@ -1,12 +1,12 @@
 import logging
 import os
+import shutil
 from dataclasses import dataclass
 from subprocess import check_call
 from tempfile import TemporaryDirectory
 from typing import Iterable, List, Optional
 
-import tomli
-from pip_requirements_parser import OptionLine, RequirementLine
+import toml
 from pip_requirements_parser import RequirementsFile as BaseRequirementsFile
 
 logger = logging.getLogger(__name__)
@@ -47,19 +47,6 @@ class RequirementsFile(BaseRequirementsFile):
         with open(filename, "w") as f:
             f.write(self.dumps())
 
-    def update_sources(self, path: str = "pyproject.toml") -> None:
-        with open(path, "r") as f:
-            config = tomli.loads(f.read())
-
-        try:
-            sources = config["tool"]["poetry"]["source"]
-        except KeyError:
-            return
-
-        for source in sources:
-            ol = OptionLine(RequirementLine("", 1), {"extra_index_urls": source["url"]})
-            self.options.append(ol)
-
     @classmethod
     def from_file(cls, filename: str) -> "RequirementsFile":
         rf = BaseRequirementsFile.from_file(filename)
@@ -88,13 +75,35 @@ class Poetry:
         commands.extend(packages)
         check_call(commands)
 
+    def _disable_default_source(self, path: str) -> None:
+        with open(path, "r") as f:
+            config = toml.load(f)
+
+        try:
+            sources = config["tool"]["poetry"]["source"]
+        except KeyError:
+            return
+
+        for source in sources:
+            source["default"] = False
+
+        with open(path, "w") as f:
+            toml.dump(config, f)
+
     def export_requirements(
         self,
         include_dev_requirements: bool = False,
         extra_requirements: Optional[Iterable[str]] = None,
+        with_credentials: bool = False,
     ) -> RequirementsFile:
         with TemporaryDirectory() as td:
             requirement_path = os.path.join(td, "requirements.txt")
+            pyproject_path = os.path.join(td, "pyproject.toml")
+            lock_path = os.path.join(td, "poetry.lock")
+
+            shutil.copy("poetry.lock", lock_path)
+            shutil.copy("pyproject.toml", pyproject_path)
+            self._disable_default_source(pyproject_path)
 
             commands = [
                 self.poetry_path,
@@ -109,9 +118,11 @@ class Poetry:
             if extra_requirements:
                 commands.extend(f"--extras={i}" for i in extra_requirements)
 
-            check_call(commands)
+            if with_credentials:
+                commands.append("--with-credentials")
+
+            check_call(commands, cwd=td)
             rf = RequirementsFile.from_file(requirement_path)
-            rf.update_sources()
 
         return rf
 

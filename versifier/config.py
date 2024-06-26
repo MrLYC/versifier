@@ -23,14 +23,6 @@ def get_private_packages_from_pyproject(path: str) -> List[str]:
         return []
 
 
-def get_site_packages_path() -> str:
-    for p in sys.path:
-        if p.endswith("site-packages"):
-            return p
-
-    return ""
-
-
 def list_all_packages(path: str = ".") -> List[str]:
     root = Path(path)
     packages = set(i.parent.name for i in root.glob("*/*.py"))

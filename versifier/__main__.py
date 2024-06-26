@@ -1,5 +1,6 @@
 import logging
 from functools import partial
+from tempfile import TemporaryDirectory
 from typing import List, Optional
 
 import click
@@ -7,7 +8,7 @@ import click
 from versifier import core
 
 from .compiler import Compiler
-from .config import get_private_packages_from_pyproject, get_site_packages_path, list_all_packages
+from .config import get_private_packages_from_pyproject, list_all_packages
 from .poetry import Poetry
 
 logger = logging.getLogger(__name__)
@@ -113,51 +114,65 @@ def extract_private_packages(
 
 
 @cli.command()
-@click.option("-o", "--output", default=".", help="output dir")
-@click.option("--poetry-path", default="poetry", help="path to poetry")
 @click.option("--nuitka-path", default="nuitka3", help="path to nuitka3")
-@click.option("-E", "--extra-requirements", multiple=True, default=[], help="extra requirements")
-@click.option("-c", "--config", default="pyproject.toml", help="config file")
-@click.option("-P", "--private-packages", multiple=True, default=[], help="private packages")
-def compile_private_packages(
-    output: str,
-    poetry_path: str,
+@click.option("-r", "--root", default=".", help="root dir")
+@click.option("-o", "--output", default=None, help="output dir")
+@click.option("-m", "--modules", multiple=True, default=None, help="included packages")
+def obfuscate_modules(
     nuitka_path: str,
-    extra_requirements: List[str],
-    config: str,
-    private_packages: List[str],
+    root: str,
+    output: Optional[str],
+    modules: List[str],
 ) -> None:
-    if not private_packages:
-        private_packages = get_private_packages_from_pyproject(config)
+    if not modules:
+        modules = list_all_packages(root)
 
-    ext = core.PackageCompiler(poetry=Poetry(poetry_path), compiler=Compiler(nuitka_path))
-    ext.compile_packages(
+    if not modules:
+        raise click.ClickException("No packages found")
+
+    ext = core.PackageObfuscator(compiler=Compiler(nuitka_path))
+    ext.obfuscate_packages(
+        packages=modules,
+        root_dir=root,
         output_dir=output,
-        packages=private_packages,
-        extra_requirements=extra_requirements,
     )
 
 
 @cli.command()
 @click.option("--nuitka-path", default="nuitka3", help="path to nuitka3")
-@click.option("-r", "--root", default=get_site_packages_path, help="root dir")
+@click.option("--poetry-path", default="poetry", help="path to poetry")
+@click.option("-r", "--root", default=".", help="root dir")
 @click.option("-o", "--output", default=None, help="output dir")
-@click.option("-p", "--packages", multiple=True, default=None, help="private packages")
-def obfuscate_packages(
+@click.option("-E", "--extra-requirements", multiple=True, default=[], help="extra requirements")
+@click.option("-P", "--private-packages", multiple=True, default=[], help="private packages")
+def obfuscate_private_packages(
+    poetry_path: str,
     nuitka_path: str,
     root: str,
     output: Optional[str],
-    packages: List[str],
+    extra_requirements: List[str],
+    private_packages: List[str],
 ) -> None:
-    if not packages:
-        packages = list_all_packages(root)
+    if not private_packages:
+        private_packages = get_private_packages_from_pyproject("pyproject.toml")
 
-    ext = core.PackageObfuscator(compiler=Compiler(nuitka_path))
-    ext.obfuscate_packages(
-        packages=packages,
-        root_dir=root,
-        output_dir=output,
-    )
+    if not private_packages:
+        raise click.ClickException("No private packages found")
+
+    with TemporaryDirectory() as td:
+        extractor = core.PackageExtractor(Poetry(poetry_path))
+        extractor.extract_packages(
+            output_dir=td,
+            packages=private_packages,
+            extra_requirements=extra_requirements,
+        )
+
+        obfuscator = core.PackageObfuscator(compiler=Compiler(nuitka_path))
+        obfuscator.obfuscate_packages(
+            packages=private_packages,
+            root_dir=td,
+            output_dir=output,
+        )
 
 
 if __name__ == "__main__":

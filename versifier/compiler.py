@@ -12,8 +12,9 @@ class Compiler:
         self,
         output_dir: str,
         package_path: str,
-        package_name: str,
     ) -> None:
+        package_name = os.path.basename(package_path)
+
         check_call(
             [
                 self.nuitka_path,
@@ -25,25 +26,36 @@ class Compiler:
             ]
         )
 
-    def compile_all_packages(
+    def compile_packages(
         self,
         source_dir: str,
         output_dir: str,
         packages: Optional[Iterable[str]] = None,
     ) -> Iterable[str]:
-        packages = packages or os.listdir(source_dir)
-        collected_packages = []
+        targets = {}
 
-        for package in packages:
-            package_path = os.path.join(source_dir, package)
-            if os.path.isdir(package_path):
-                self.compile_package(output_dir, package_path, package)
-                collected_packages.append(package_path)
+        def handle_target(package: str, filename: str) -> bool:
+            path = os.path.join(source_dir, filename)
+            if os.path.exists(path):
+                self.compile_package(output_dir, path)
+                targets[package] = path
+
+                return True
+            return False
+
+        for package in packages or os.listdir(source_dir):
+            name = package
+            if handle_target(package, name):
                 continue
 
-            package_file_path = f"{package_path}.py"
-            if os.path.isfile(package_file_path):
-                self.compile_package(output_dir, package_file_path, package)
-                collected_packages.append(package_file_path)
+            if handle_target(package, f"{name}.py"):
+                continue
 
-        return collected_packages
+            name = package.replace("-", "_")
+            if handle_target(package, name):
+                continue
+
+            if handle_target(package, f"{name}.py"):
+                continue
+
+        return targets.values()

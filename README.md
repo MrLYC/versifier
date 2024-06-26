@@ -51,6 +51,7 @@ versifier poetry-to-requirements -o <output_file> --poetry-path <path_to_poetry>
 - `-d, --include-dev-requirements`: 包括开发需求。
 - `-E, --extra-requirements`: 额外的需求。
 - `-m, --markers`: 过滤标记。
+- `-c, --config`: 配置文件。
 - `-P, --private-packages`：私有包列表。
 
 ### extract-private-packages
@@ -65,9 +66,23 @@ versifier extract-private-packages --output <output_dir> --poetry-path <path_to_
 - `--poetry-path`: 指明Poetry的路径。默认为 "poetry"。
 - `-E, --extra-requirements`: 额外的需求。
 - `--exclude-file-patterns`: 需要排除的文件。
+- `-c, --config`: 配置文件。
 - `-P, --private-packages`：私有包列表。
 
-### compile-private-packages
+### obfuscate-modules
+
+此命令将指定模块进行混淆，支持原地替换。
+
+```bash
+versifier obfuscate-modules --nuitka-path <path_to_nuitka3> --root-dir <root_dir> --output-dir <output_dir> --modules <module>
+```
+
+- `--nuitka-path`: 指明nuitka3的路径。默认为 "nuitka3"。
+- `-r, --root`: 指明根目录。默认为当前目录。
+- `-o, --output`: 指明输出目录。默认为当前目录。
+- `-m, --modules`：模块列表。
+
+### obfuscate-private-packages
 
 此命令编译私有包。
 
@@ -75,6 +90,7 @@ versifier extract-private-packages --output <output_dir> --poetry-path <path_to_
 versifier compile-private-packages --output <output_dir> --poetry-path <path_to_poetry> --nuitka-path <path_to_nuitka3> -E <extra_requirements>
 ```
 
+- `-r, --root`: 指明根目录。默认为当前目录。
 - `-o, --output`: 指明输出目录。默认为当前目录。
 - `--poetry-path`: 指明Poetry的路径。默认为 "poetry"。
 - `--nuitka-path`: 指明nuitka3的路径。默认为 "nuitka3"。

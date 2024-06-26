@@ -57,6 +57,7 @@ class DependencyExporter:
         include_specifiers: bool = True,
         include_comments: bool = False,
         include_dev_requirements: bool = False,
+        with_credentials: bool = False,
         extra_requirements: Iterable[str] = (),
         exclude: Iterable[str] = (),
         markers: Iterable[str] = (),
@@ -65,6 +66,7 @@ class DependencyExporter:
         rf = self.poetry.export_requirements(
             extra_requirements=extra_requirements,
             include_dev_requirements=include_dev_requirements,
+            with_credentials=with_credentials,
         ).filter(exclude=exclude, markers=markers)
 
         for r in rf.requirements:
@@ -107,6 +109,7 @@ class PackageExtractor:
         rf = self.poetry.export_requirements(
             extra_requirements=extra_requirements,
             include_dev_requirements=True,
+            with_credentials=True,
         ).filter(include=packages)
 
         with TemporaryDirectory() as td:
@@ -132,26 +135,6 @@ class PackageExtractor:
 
 
 @dataclass
-class PackageCompiler(PackageExtractor):
-    compiler: Compiler
-
-    def compile_packages(
-        self,
-        output_dir: str,
-        packages: Iterable[str] = (),
-        extra_requirements: Iterable[str] = (),
-    ) -> None:
-        with TemporaryDirectory() as td:
-            self.extract_packages(
-                td,
-                packages=packages,
-                extra_requirements=extra_requirements,
-            )
-
-            self.compiler.compile_all_packages(td, output_dir)
-
-
-@dataclass
 class PackageObfuscator:
     compiler: Compiler
 
@@ -162,22 +145,19 @@ class PackageObfuscator:
         output_dir: Optional[str] = None,
     ) -> None:
         in_replace = False
-        packages = packages or os.listdir(root_dir)
-        temporary_dirs = []
 
         if output_dir is None:
-            td = TemporaryDirectory()
-            temporary_dirs.append(td)
-            output_dir = td.name
+            output_dir = root_dir
             in_replace = True
 
-        collected_packages = self.compiler.compile_all_packages(root_dir, output_dir, packages)
+        with TemporaryDirectory() as td:
+            collected_packages = self.compiler.compile_packages(root_dir, td, packages)
+
+            for output in os.listdir(td):
+                shutil.move(os.path.join(td, output), output_dir)
 
         if not in_replace:
             return
-
-        for output in os.listdir(output_dir):
-            shutil.move(os.path.join(output_dir, output), root_dir)
 
         for p in collected_packages:
             if os.path.isdir(p):
