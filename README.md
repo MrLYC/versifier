@@ -24,92 +24,100 @@ pip install versifier
 ## Commands
 ### requirements-to-poetry
 
-此命令将requirements.txt文件转换为Poetry格式，默认情况下会自动初始化Poetry环境。
+将 requirements 转换为 poetry。
 
 ```bash
-versifier requirements-to-poetry --poetry-path <path_to_poetry> -r <requirements_files> -d <dev_requirements_files> -e <exclude_packages>
+versifier requirements-to-poetry --requirements <requirements_files> --dev-requirements <dev_requirements_files> --exclude <exclude_packages> --add-only --config <config_file> --root <root_dir> --poetry-path <path_to_poetry> --nuitka-path <path_to_nuitka3> --log-level <log_level>
 ```
 
-- `--poetry-path`: 指明Poetry的路径。默认为 "poetry"。
-- `-r, --requirements`: 一个或多个requirements文件。
-- `-d, --dev-requirements`: 一个或多个开发需求文件。
-- `-e, --exclude`: 需要排除的包。
-- `--add-only`: 只添加依赖，不进行初始化。
+参数说明：
+- `-R, --requirements`: 指定 requirements 文件。默认为当前目录的 requirements.txt。
+- `-d, --dev-requirements`: 指定开发环境的 requirements 文件。默认为当前目录的 dev-requirements.txt。
+- `-e, --exclude`: 指定要排除的包。
+- `--add-only`: 只添加指定的包，而不删除任何现有的包。
+- `-c, --config`: 指定配置文件。
+- `-r, --root`: 指定根目录。默认为当前目录。
+- `--poetry-path`: 指定 poetry 的路径。默认为 "poetry"。
+- `--nuitka-path`: 指定 nuitka3 的路径。默认为 "nuitka3"。
+- `--log-level`: 指定日志级别。
 
 ### poetry-to-requirements
 
-此命令将Poetry依赖项导出到requirements.txt格式。
+将 poetry 转换为 requirements。
 
 ```bash
-versifier poetry-to-requirements -o <output_file> --poetry-path <path_to_poetry> --exclude-specifiers --include-comments -d -E <extra_requirements> -m <markers>
+versifier poetry-to-requirements --output <output_file> --exclude-specifiers --include-comments --include-dev-requirements --extra-requirements <extra_requirements> --markers <markers> --private-packages <private_packages> --config <config_file> --root <root_dir> --poetry-path <path_to_poetry> --nuitka-path <path_to_nuitka3> --log-level <log_level>
 ```
 
-- `-o, --output`: 指明输出文件。如果未提供，则输出打印到控制台。
-- `--poetry-path`: 指明Poetry的路径。默认为 "poetry"。
-- `--exclude-specifiers`: 排除说明符。
-- `--include-comments`: 包括评论。
-- `-d, --include-dev-requirements`: 包括开发需求。
-- `-E, --extra-requirements`: 额外的需求。
-- `-m, --markers`: 过滤标记。
-- `-c, --config`: 配置文件。
-- `-P, --private-packages`：私有包列表。
+参数说明：
+- `-o, --output`: 指定输出文件。
+- `--exclude-specifiers`: 排除指定的包。
+- `--include-comments`: 包含注释。
+- `-d, --include-dev-requirements`: 包含开发环境的 requirements。
+- `-E, --extra-requirements`: 指定额外的 requirements。
+- `-m, --markers`: 指定标记。
+- `-P, --private-packages`: 指定私有包。
+- `-c, --config`: 指定配置文件。
+- `-r, --root`: 指定根目录。默认为当前目录。
+- `--poetry-path`: 指定 poetry 的路径。默认为 "poetry"。
+- `--nuitka-path`: 指定 nuitka3 的路径。默认为 "nuitka3"。
+- `--log-level`: 指定日志级别。
 
 ### extract-private-packages
 
-此命令提取私有包。
+提取私有包。
 
 ```bash
-versifier extract-private-packages --output <output_dir> --poetry-path <path_to_poetry> -E <extra_requirements> --exclude-file-patterns <exclude_files>
+versifier extract-private-packages --output <output_dir> --extra-requirements <extra_requirements> --exclude-file-patterns <exclude_files> --private-packages <private_packages> --config <config_file> --root <root_dir> --poetry-path <path_to_poetry> --nuitka-path <path_to_nuitka3> --log-level <log_level>
 ```
 
-- `-o, --output`: 指明输出目录。默认为当前目录。
-- `--poetry-path`: 指明Poetry的路径。默认为 "poetry"。
-- `-E, --extra-requirements`: 额外的需求。
-- `--exclude-file-patterns`: 需要排除的文件。
-- `-c, --config`: 配置文件。
-- `-P, --private-packages`：私有包列表。
+参数说明：
+- `-o, --output`: 指定输出目录。默认为当前目录。
+- `-E, --extra-requirements`: 指定额外的 requirements。
+- `--exclude-file-patterns`: 指定要排除的文件模式。
+- `-P, --private-packages`: 指定要提取的私有包列表。
+- `-c, --config`: 指定配置文件。
+- `-r, --root`: 指定根目录。默认为当前目录。
+- `--poetry-path`: 指定 poetry 的路径。默认为 "poetry"。
+- `--nuitka-path`: 指定 nuitka3 的路径。默认为 "nuitka3"。
+- `--log-level`: 指定日志级别。
 
-### obfuscate-modules
+### obfuscate-project-dirs
 
-此命令将指定模块进行混淆，支持原地替换。
+混淆项目目录。
 
 ```bash
-versifier obfuscate-modules --nuitka-path <path_to_nuitka3> --root-dir <root_dir> --output-dir <output_dir> --modules <module>
+versifier obfuscate-project-dirs --output <output_dir> --sub-dirs <included_sub_dirs> --exclude-packages <exclude_packages> --config <config_file> --root <root_dir> --poetry-path <path_to_poetry> --nuitka-path <path_to_nuitka3> --log-level <log_level>
 ```
 
-- `--nuitka-path`: 指明nuitka3的路径。默认为 "nuitka3"。
-- `-r, --root`: 指明根目录。默认为当前目录。
-- `-o, --output`: 指明输出目录。默认为当前目录。
-- `-m, --modules`：模块列表。
+参数说明：
+- `-o, --output`: 指定输出目录。默认为当前目录。
+- `-d, --sub-dirs`: 指定要包含的子目录。
+- `--exclude-packages`: 指定要排除的包。
+- `-c, --config`: 指定配置文件。
+- `-r, --root`: 指定根目录。默认为当前目录。
+- `--poetry-path`: 指定 poetry 的路径。默认为 "poetry"。
+- `--nuitka-path`: 指定 nuitka3 的路径。默认为 "nuitka3"。
+- `--log-level`: 指定日志级别。
 
 ### obfuscate-private-packages
 
-此命令编译私有包。
+混淆私有包。
 
 ```bash
-versifier compile-private-packages --output <output_dir> --poetry-path <path_to_poetry> --nuitka-path <path_to_nuitka3> -E <extra_requirements>
+versifier obfuscate-private-packages --output <output_dir> --extra-requirements <extra_requirements> --private-packages <private_packages> --config <config_file> --root <root_dir> --poetry-path <path_to_poetry> --nuitka-path <path_to_nuitka3> --log-level <log_level>
 ```
 
-- `-r, --root`: 指明根目录。默认为当前目录。
-- `-o, --output`: 指明输出目录。默认为当前目录。
-- `--poetry-path`: 指明Poetry的路径。默认为 "poetry"。
-- `--nuitka-path`: 指明nuitka3的路径。默认为 "nuitka3"。
-- `-E, --extra-requirements`: 额外的需求。
-- `-P, --private-packages`：私有包列表。
+参数说明：
+- `-o, --output`: 指定输出目录。默认为当前目录。
+- `-E, --extra-requirements`: 指定额外的 requirements。
+- `-P, --private-packages`: 指定要混淆的私有包列表。
+- `-c, --config`: 指定配置文件。
+- `-r, --root`: 指定根目录。默认为当前目录。
+- `--poetry-path`: 指定 poetry 的路径。默认为 "poetry"。
+- `--nuitka-path`: 指定 nuitka3 的路径。默认为 "nuitka3"。
+- `--log-level`: 指定日志级别。
 
-
-### obfuscate-packages
-
-此命令将指定包进行混淆，支持原地替换。
-
-```bash
-versifier obfuscate-packages --nuitka-path <path_to_nuitka3> --root-dir <root_dir> --output-dir <output_dir> -P <private_packages>
-```
-
-- `--nuitka-path`: 指明nuitka3的路径。默认为 "nuitka3"。
-- `-r, --root`: 指明根目录。默认为当前目录。
-- `-o, --output`: 指明输出目录。默认为当前目录。
-- `-p, --private-packages`：私有包列表。
 
 ## License
 

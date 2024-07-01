@@ -7,7 +7,7 @@ install: ## Install the poetry environment and install the pre-commit hooks
 
 .PHONY: check
 check: ## Run code quality tools.
-	poetry run versifier requirements-to-poetry -r requirements_ci.txt
+	poetry run versifier requirements-to-poetry -R requirements_ci.txt
 	poetry run versifier extract-private-packages
 	poetry run versifier poetry-to-requirements
 

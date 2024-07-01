@@ -1,30 +1,35 @@
-import sys
+from dataclasses import InitVar, dataclass, field
 from pathlib import Path
-from typing import List
+from typing import Any, Dict, List
 
 import toml
 
 
-def get_private_packages_from_pyproject(path: str) -> List[str]:
-    if not Path(path).exists():
-        return []
+@dataclass
+class Config:
+    root_dir: InitVar[str] = "."
+    path: InitVar[str] = "pyproject.toml"
+    content: Dict[str, Any] = field(init=False)
 
-    with open(path) as f:
-        config = toml.loads(f.read())
+    def __post_init__(self, root_dir: str, path: str) -> None:
+        config_path = Path(root_dir).joinpath(path)
+        if not config_path.exists():
+            self.config = {}
 
-    try:
-        return config["tool"]["versifier"]["private_packages"]  # type: ignore
-    except KeyError:
-        pass
+        with open(path) as f:
+            self.config = toml.loads(f.read())
 
-    try:
-        return config["versifier"]["private_packages"]  # type: ignore
-    except KeyError:
-        return []
+    def _get_item(self, key: str) -> Any:
+        try:
+            return self.config["tool"]["versifier"][key]
+        except KeyError:
+            return self.config["versifier"][key]
 
+    def get_private_packages(self) -> List[str]:
+        return self._get_item("private_packages")  # type: ignore
 
-def list_all_packages(path: str = ".") -> List[str]:
-    root = Path(path)
-    packages = set(i.parent.name for i in root.glob("*/*.py"))
+    def get_poetry_extras(self) -> List[str]:
+        return self._get_item("poetry_extras")  # type: ignore
 
-    return list(packages)
+    def get_projects_dirs(self) -> List[str]:
+        return self._get_item("projects_dirs")  # type: ignore

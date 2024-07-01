@@ -25,12 +25,16 @@ versifier = "versifier.__main__:cli"
 
 [tool.poetry.dev-dependencies]
 mypy = "0.971"
+types-toml = "0.10.8.7"
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.versifier]
 private_packages = ["click", "pyparsing", "ycyc"]
+poetry_extras = []
+projects_dirs = []
 
 [tool.mypy]
 files = ["versifier"]

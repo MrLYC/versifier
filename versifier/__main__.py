@@ -1,38 +1,96 @@
+import functools
 import logging
+import os
+from dataclasses import dataclass
 from functools import partial
+from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import List, Optional
+from typing import Any, Callable, List, Optional
 
 import click
 
 from versifier import core
 
 from .compiler import Compiler
-from .config import get_private_packages_from_pyproject, list_all_packages
+from .config import Config
 from .poetry import Poetry
 
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class Context:
+    root_path: str
+    config_path: str
+    poetry_path: str
+    nuitka_path: str
+
+    @property
+    def poetry(self) -> Poetry:
+        return Poetry(self.poetry_path)
+
+    @property
+    def compiler(self) -> Compiler:
+        return Compiler(self.nuitka_path)
+
+    @property
+    def config(self) -> Config:
+        return Config(path=self.config_path)
+
+    @property
+    def root_dir(self) -> Path:
+        return Path(self.root_path)
+
+    @classmethod
+    def wrapper(cls, func: Callable) -> Callable:
+        @click.option("-c", "--config", default="pyproject.toml", help="config file")
+        @click.option("-r", "--root", default=".", help="root dir")
+        @click.option("--poetry-path", default="poetry", help="path to poetry")
+        @click.option("--nuitka-path", default="nuitka3", help="path to nuitka3")
+        @click.option("--log-level", default="INFO", help="log level")
+        @functools.wraps(func)
+        def wrapped(
+            config: str,
+            root: str,
+            poetry_path: str,
+            nuitka_path: str,
+            log_level: str,
+            *args: Any,
+            **kwargs: Any,
+        ) -> None:
+            logging.basicConfig(level=logging.getLevelName(log_level))
+            os.chdir(root)
+
+            ctx = cls(
+                root_path=root,
+                config_path=config,
+                poetry_path=poetry_path,
+                nuitka_path=nuitka_path,
+            )
+            func(ctx=ctx, *args, **kwargs)
+
+        return wrapped
+
+
 @click.group()
 def cli() -> None:
-    logging.basicConfig(level=logging.INFO)
+    pass
 
 
-@cli.command()
-@click.option("--poetry-path", default="poetry", help="path to poetry")
-@click.option("-r", "--requirements", multiple=True, default=[], help="requirements files")
+@cli.command(help="convert requirements to poetry")
+@click.option("-R", "--requirements", multiple=True, default=[], help="requirements files")
 @click.option("-d", "--dev-requirements", multiple=True, default=[], help="dev requirements files")
 @click.option("-e", "--exclude", multiple=True, default=[], help="exclude packages")
 @click.option("--add-only", is_flag=True, help="add only")
+@Context.wrapper
 def requirements_to_poetry(
-    poetry_path: str,
+    ctx: Context,
     requirements: List[str],
     dev_requirements: List[str],
     exclude: List[str],
     add_only: bool,
 ) -> None:
-    poetry = Poetry(poetry_path)
+    poetry = ctx.poetry
     if not add_only:
         poetry.init_if_needed()
 
@@ -44,30 +102,30 @@ def requirements_to_poetry(
     )
 
 
-@cli.command()
+@cli.command(help="convert poetry to requirements")
 @click.option("-o", "--output", default="", help="output file")
-@click.option("--poetry-path", default="poetry", help="path to poetry")
 @click.option("--exclude-specifiers", is_flag=True, help="exclude specifiers")
 @click.option("--include-comments", is_flag=True, help="include comments")
 @click.option("-d", "--include-dev-requirements", is_flag=True, help="include dev requirements")
 @click.option("-E", "--extra-requirements", multiple=True, default=[], help="extra requirements")
 @click.option("-m", "--markers", multiple=True, default=[], help="markers")
-@click.option("-c", "--config", default="pyproject.toml", help="config file")
 @click.option("-P", "--private-packages", multiple=True, default=[], help="private packages")
+@Context.wrapper
 def poetry_to_requirements(
+    ctx: Context,
     output: str,
-    poetry_path: str,
     exclude_specifiers: bool,
     include_comments: bool,
     include_dev_requirements: bool,
     extra_requirements: List[str],
     markers: List[str],
-    config: str,
     private_packages: List[str],
 ) -> None:
+    conf = ctx.config
     if not private_packages:
-        private_packages = get_private_packages_from_pyproject(config)
-    ext = core.DependencyExporter(Poetry(poetry_path))
+        private_packages = conf.get_private_packages()
+
+    ext = core.DependencyExporter(ctx.poetry)
     fn = partial(
         ext.export_to_requirements_txt,
         include_specifiers=not exclude_specifiers,
@@ -86,25 +144,25 @@ def poetry_to_requirements(
             fn(callback=lambda line: f.write(line + "\n"))
 
 
-@cli.command()
+@cli.command(help="extract private packages")
 @click.option("-o", "--output", default=".", help="output dir")
-@click.option("--poetry-path", default="poetry", help="path to poetry")
 @click.option("-E", "--extra-requirements", multiple=True, default=[], help="extra requirements")
 @click.option("--exclude-file-patterns", multiple=True, default=[], help="exclude files")
-@click.option("-c", "--config", default="pyproject.toml", help="config file")
 @click.option("-P", "--private-packages", multiple=True, default=[], help="private packages")
+@Context.wrapper
 def extract_private_packages(
+    ctx: Context,
     output: str,
-    poetry_path: str,
     extra_requirements: List[str],
     exclude_file_patterns: List[str],
-    config: str,
     private_packages: List[str],
 ) -> None:
-    if not private_packages:
-        private_packages = get_private_packages_from_pyproject(config)
+    conf = ctx.config
 
-    ext = core.PackageExtractor(Poetry(poetry_path))
+    if not private_packages:
+        private_packages = conf.get_private_packages()
+
+    ext = core.PackageExtractor(ctx.poetry)
     ext.extract_packages(
         output_dir=output,
         packages=private_packages,
@@ -113,66 +171,76 @@ def extract_private_packages(
     )
 
 
-@cli.command()
-@click.option("--nuitka-path", default="nuitka3", help="path to nuitka3")
-@click.option("-r", "--root", default=".", help="root dir")
+@cli.command(help="obfuscate project dirs")
 @click.option("-o", "--output", default=None, help="output dir")
-@click.option("-m", "--modules", multiple=True, default=None, help="included packages")
-def obfuscate_modules(
-    nuitka_path: str,
-    root: str,
+@click.option("-d", "--sub-dirs", multiple=True, default=None, help="included sub dirs")
+@click.option("--exclude-packages", multiple=True, default=["*.tests"], help="exclude packages")
+@Context.wrapper
+def obfuscate_project_dirs(
+    ctx: Context,
     output: Optional[str],
-    modules: List[str],
+    sub_dirs: List[str],
+    exclude_packages: List[str],
 ) -> None:
-    if not modules:
-        modules = list_all_packages(root)
+    root_dir = ctx.root_dir
+    conf = ctx.config
 
-    if not modules:
-        raise click.ClickException("No packages found")
+    if not sub_dirs:
+        sub_dirs = conf.get_projects_dirs() or ["."]
 
-    ext = core.PackageObfuscator(compiler=Compiler(nuitka_path))
-    ext.obfuscate_packages(
-        packages=modules,
-        root_dir=root,
-        output_dir=output,
-    )
+    for d in sub_dirs:
+        path = root_dir.joinpath(d)
+        ext = core.PackageObfuscator(compiler=ctx.compiler)
+        ext.obfuscate_packages(
+            packages=set(i.parent.name for i in path.glob("*/__init__.py")),
+            root_dir=str(path),
+            output_dir=output,
+            exclude_packages=exclude_packages,
+        )
 
 
-@cli.command()
-@click.option("--nuitka-path", default="nuitka3", help="path to nuitka3")
-@click.option("--poetry-path", default="poetry", help="path to poetry")
-@click.option("-r", "--root", default=".", help="root dir")
+@cli.command(help="obfuscate private packages")
 @click.option("-o", "--output", default=None, help="output dir")
 @click.option("-E", "--extra-requirements", multiple=True, default=[], help="extra requirements")
 @click.option("-P", "--private-packages", multiple=True, default=[], help="private packages")
+@Context.wrapper
 def obfuscate_private_packages(
-    poetry_path: str,
-    nuitka_path: str,
-    root: str,
+    ctx: Context,
     output: Optional[str],
     extra_requirements: List[str],
     private_packages: List[str],
 ) -> None:
+    conf = ctx.config
+
     if not private_packages:
-        private_packages = get_private_packages_from_pyproject("pyproject.toml")
+        private_packages = conf.get_private_packages()
 
     if not private_packages:
         raise click.ClickException("No private packages found")
 
     with TemporaryDirectory() as td:
-        extractor = core.PackageExtractor(Poetry(poetry_path))
+        extractor = core.PackageExtractor(ctx.poetry)
         extractor.extract_packages(
             output_dir=td,
             packages=private_packages,
             extra_requirements=extra_requirements,
         )
 
-        obfuscator = core.PackageObfuscator(compiler=Compiler(nuitka_path))
+        obfuscator = core.PackageObfuscator(compiler=ctx.compiler)
         obfuscator.obfuscate_packages(
             packages=private_packages,
             root_dir=td,
             output_dir=output,
         )
+
+
+@cli.command(help="show command help details")
+@click.pass_context
+def command_details(ctx: click.Context) -> None:
+    for name, command in cli.commands.items():
+        print(f"----- {name} -----")
+        print(command.get_help(ctx))
+        print("")
 
 
 if __name__ == "__main__":

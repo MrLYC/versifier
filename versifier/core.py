@@ -143,6 +143,7 @@ class PackageObfuscator:
         packages: Iterable[str],
         root_dir: str,
         output_dir: Optional[str] = None,
+        exclude_packages: Optional[List[str]] = None,
     ) -> None:
         in_replace = False
 
@@ -151,7 +152,7 @@ class PackageObfuscator:
             in_replace = True
 
         with TemporaryDirectory() as td:
-            collected_packages = self.compiler.compile_packages(root_dir, td, packages)
+            collected_packages = self.compiler.compile_packages(root_dir, td, packages, )
 
             for output in os.listdir(td):
                 shutil.move(os.path.join(td, output), output_dir)
