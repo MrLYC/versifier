@@ -123,7 +123,7 @@ def poetry_to_requirements(
 ) -> None:
     conf = ctx.config
     if not private_packages:
-        private_packages = conf.get_private_packages()
+        private_packages = conf.get_private_packages() or []
 
     ext = core.DependencyExporter(ctx.poetry)
     fn = partial(
@@ -160,7 +160,7 @@ def extract_private_packages(
     conf = ctx.config
 
     if not private_packages:
-        private_packages = conf.get_private_packages()
+        private_packages = conf.get_private_packages() or []
 
     ext = core.PackageExtractor(ctx.poetry)
     ext.extract_packages(
@@ -213,7 +213,7 @@ def obfuscate_private_packages(
     conf = ctx.config
 
     if not private_packages:
-        private_packages = conf.get_private_packages()
+        private_packages = conf.get_private_packages() or []
 
     if not private_packages:
         raise click.ClickException("No private packages found")

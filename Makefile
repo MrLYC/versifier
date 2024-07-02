@@ -13,8 +13,9 @@ check: ## Run code quality tools.
 
 .PHONY: test
 test: ## Test the code with pytest
+	$(eval args := )
 	@echo "🚀 Testing code: Running pytest"
-	@poetry run pytest --doctest-modules
+	@poetry run pytest $(args)
 
 .PHONY: build
 build: clean-build ## Build wheel file using poetry

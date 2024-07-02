@@ -152,10 +152,11 @@ class PackageObfuscator:
             in_replace = True
 
         with TemporaryDirectory() as td:
-            collected_packages = self.compiler.compile_packages(root_dir, td, packages, )
+            collected_packages = self.compiler.compile_packages(root_dir, td, packages)
+            self.compiler.generate_package_stubs(root_dir, td, packages)
 
             for output in os.listdir(td):
-                shutil.move(os.path.join(td, output), output_dir)
+                shutil.move(os.path.join(td, output), os.path.join(output_dir, output))
 
         if not in_replace:
             return

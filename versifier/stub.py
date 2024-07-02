@@ -1,28 +1,76 @@
 import ast
 import io
 import os
-from ast import AST, AnnAssign, Assign, ClassDef, Ellipsis, Expr, FunctionDef, Import, ImportFrom, Num, Str
+from ast import AST, AnnAssign, Assign, ClassDef, Ellipsis, Expr, FunctionDef, If, Import, ImportFrom, Name, Pass, Str
+from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import Any, List, Union
+from subprocess import check_call
+from textwrap import dedent, indent
+from typing import Any, Generator, Iterable, List
 
 import astunparse
 
 
 @dataclass
 class ModuleStubGenerator(ast.NodeVisitor):
-    file_path: str
-    buffer: io.TextIOWrapper
+    source: io.TextIOWrapper
+    output: io.TextIOWrapper
     stack: List[AST] = field(default_factory=list)
 
-    def write_buffer(self, col_offset: int, content: str) -> None:
-        for line in content.splitlines():
-            self.buffer.write(" " * col_offset)
-            self.buffer.write(line.strip())
-            self.buffer.write("\n")
+    def write_buffer(
+        self, col_offset: int, content: str, pre_newline: bool = False, post_newline: bool = False
+    ) -> None:
+        if pre_newline:
+            self.output.write("\n")
 
-    def write_node(self, node: AST) -> None:
+        self.output.write(indent(content, " " * col_offset))
+
+        if post_newline:
+            self.output.write("\n")
+
+    def write_node(self, node: AST, pre_newline: bool = False, post_newline: bool = True) -> None:
         content = astunparse.unparse(node)
-        self.write_buffer(node.col_offset, content)
+        self.write_buffer(node.col_offset, content, pre_newline, post_newline)
+
+    def write_docstring(self, parent: AST, value: Str) -> None:
+        if value.col_offset < 0:
+            value.col_offset = parent.col_offset + 4
+
+        cleaned = dedent(value.s).strip()
+        lines = cleaned.splitlines()
+
+        col_offset = value.col_offset
+        self.write_buffer(col_offset, "'''", post_newline=True)
+
+        for line in lines:
+            self.write_buffer(col_offset, line, post_newline=True)
+
+        self.write_buffer(col_offset, "'''", post_newline=True)
+
+    def write_ellipsis(self, col_offset: int = 0, parent_col_offset: int = 0) -> None:
+        self.write_node(Ellipsis(col_offset=col_offset or parent_col_offset + 4))
+
+    @contextmanager
+    def scope(self, node: AST) -> Generator:
+        self.stack.append(node)
+        yield
+        self.stack.pop()
+
+    def get_parent_node(self) -> AST:
+        return self.stack[-2]
+
+    def visit_Expr(self, node: Expr) -> Any:
+        if not isinstance(node.value, Str) or self.is_in_function():
+            return self.generic_visit(node)
+
+        parent = self.get_parent_node()
+        docstring = node.value
+        if node.col_offset >= 0:
+            docstring.col_offset = node.col_offset
+        elif docstring.col_offset < 0:
+            docstring.col_offset = getattr(parent, "col_offset", 0)
+
+        self.write_docstring(parent, docstring)
 
     def visit_nodes(self, *nodes: AST) -> None:
         for node in nodes:
@@ -34,46 +82,65 @@ class ModuleStubGenerator(ast.NodeVisitor):
                 return True
         return False
 
-    def convert_assign_value(self, node: Union[Assign, AnnAssign]) -> Any:
-        if not isinstance(node.value, (Num, Str)):
-            node.value = Ellipsis()
-
     def visit_AnnAssign(self, node: AnnAssign) -> None:
         if self.is_in_function():
             return
 
-        self.convert_assign_value(node)
+        if not isinstance(node.target, Name) or node.target.id.startswith("_"):
+            return
+
         self.write_node(node)
 
     def visit_Assign(self, node: Assign) -> Any:
         if self.is_in_function():
             return
 
-        self.convert_assign_value(node)
+        target = node.targets[0]
+        if not isinstance(target, Name) or target.id.startswith("_"):
+            return
+
         self.write_node(node)
 
+    def visit_If(self, node: If) -> None:
+        if self.is_in_function():
+            return
+
+        body = node.body
+        node.body = []
+        self.write_node(node)
+        self.visit_nodes(*body)
+        self.write_ellipsis(parent_col_offset=node.col_offset)
+
     def visit_FunctionDef(self, node: FunctionDef) -> Any:
-        self.stack.append(node)
+        if node.name.startswith("_"):
+            return
 
         first_statement = node.body[0]
-        if not node.name.startswith("_"):
-            node.body = []
-            self.write_node(node)
+        node.body = []
+        self.write_node(node, True, False)
 
-            if isinstance(first_statement, Expr) and isinstance(first_statement.value, Str):
-                self.write_buffer(node.col_offset + 1, f"'''\n{first_statement.value.s}'''")
+        if isinstance(first_statement, Expr) and isinstance(first_statement.value, Str):
+            self.write_docstring(node, first_statement.value)
 
-            else:
-                self.write_node(Ellipsis(col_offset=first_statement.col_offset))
+        else:
+            self.write_ellipsis(col_offset=first_statement.col_offset)
 
-        self.stack.pop()
+    def visit_Pass(self, node: Pass) -> Any:
+        self.write_ellipsis(col_offset=node.col_offset)
 
     def visit_ClassDef(self, node: ClassDef) -> Any:
         body = node.body
         node.body = []
+        first_statement = body[0]
 
-        self.write_node(node)
+        self.write_node(node, True, False)
+
+        if isinstance(first_statement, Expr) and isinstance(first_statement.value, Str):
+            self.write_docstring(node, first_statement.value)
+            body = body[1:]
+
         self.visit_nodes(*body)
+        self.write_ellipsis(parent_col_offset=node.col_offset)
 
     def visit_Import(self, node: Import) -> Any:
         self.write_node(node)
@@ -81,28 +148,35 @@ class ModuleStubGenerator(ast.NodeVisitor):
     def visit_ImportFrom(self, node: ImportFrom) -> Any:
         self.write_node(node)
 
-    def generate(self) -> None:
-        with open(self.file_path, "r") as fp:
-            code = fp.read()
+    def visit(self, node: AST) -> None:
+        with self.scope(node):
+            super().visit(node)
 
-        module = ast.parse(code)
+    def generate(self) -> None:
+        module = ast.parse(self.source.read())
         self.visit(module)
 
 
 @dataclass
 class PackageStubGenerator:
-    source_dir: str
     output_dir: str
 
-    def generate(self) -> None:
-        for root, _, files in os.walk(self.source_dir):
-            for file in files:
-                if not file.endswith(".py"):
-                    continue
+    def generate(self, source_dir: str, packages: Iterable[str]) -> None:
+        for package in packages:
+            package_dir = os.path.join(source_dir, package)
+            output_dir = os.path.join(self.output_dir, f"{package}-stubs")
 
-                source_path = os.path.join(root, file)
-                output_path = os.path.join(self.output_dir, file.replace(".py", ".pyi"))
+            for root, _, files in os.walk(package_dir):
+                for file in files:
+                    if not file.endswith(".py"):
+                        continue
 
-                with open(output_path, "w") as fp:
-                    generator = ModuleStubGenerator(source_path, buffer=fp)
-                    generator.generate()
+                    source_path = os.path.join(root, file)
+                    target_dir = root.replace(package_dir, output_dir)
+                    os.makedirs(target_dir, exist_ok=True)
+
+                    with open(source_path) as source_file, open(
+                        os.path.join(target_dir, f"{file}i"), "w"
+                    ) as output_file:
+                        generator = ModuleStubGenerator(source=source_file, output=output_file)
+                        generator.generate()

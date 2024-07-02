@@ -1,6 +1,6 @@
 from dataclasses import InitVar, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import toml
 
@@ -15,21 +15,26 @@ class Config:
         config_path = Path(root_dir).joinpath(path)
         if not config_path.exists():
             self.config = {}
+        else:
+            with open(config_path) as f:
+                self.config = toml.loads(f.read())
 
-        with open(path) as f:
-            self.config = toml.loads(f.read())
-
-    def _get_item(self, key: str) -> Any:
+    def _get_item(self, key: str) -> Optional[Any]:
         try:
             return self.config["tool"]["versifier"][key]
         except KeyError:
-            return self.config["versifier"][key]
+            pass
 
-    def get_private_packages(self) -> List[str]:
+        try:
+            return self.config["versifier"][key]
+        except KeyError:
+            return None
+
+    def get_private_packages(self) -> Optional[List[str]]:
         return self._get_item("private_packages")  # type: ignore
 
-    def get_poetry_extras(self) -> List[str]:
+    def get_poetry_extras(self) -> Optional[List[str]]:
         return self._get_item("poetry_extras")  # type: ignore
 
-    def get_projects_dirs(self) -> List[str]:
+    def get_projects_dirs(self) -> Optional[List[str]]:
         return self._get_item("projects_dirs")  # type: ignore
