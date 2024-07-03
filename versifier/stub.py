@@ -105,7 +105,18 @@ class ModuleStubGenerator(ast.NodeVisitor):
         value = node.value
         if not isinstance(
             value,
-            (ast.Num, ast.Str, ast.Bytes, ast.Tuple, ast.List, ast.Dict, ast.Set, ast.JoinedStr),
+            (
+                ast.Num,
+                ast.Str,
+                ast.Bytes,
+                ast.Tuple,
+                ast.List,
+                ast.Dict,
+                ast.Set,
+                ast.JoinedStr,
+                ast.Constant,
+                ast.NameConstant,
+            ),
         ):
             return False
 
@@ -116,9 +127,11 @@ class ModuleStubGenerator(ast.NodeVisitor):
         else:
             func = type(value).__name__.lower()
 
-        node.value = ast.Call(func=ast.Name(id=func, ctx=ast.Load()), args=[], keywords=[])
+        if func != "constant" and func != "nameconstant":
+            node.value = ast.Call(func=ast.Name(id=func, ctx=ast.Load()), args=[], keywords=[])
+            return True
 
-        return True
+        return False
 
     def visit_Expr(self, node: ast.Expr) -> Any:
         if not isinstance(node.value, ast.Str) or self.is_in_function():
