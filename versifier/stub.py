@@ -115,7 +115,6 @@ class ModuleStubGenerator(ast.NodeVisitor):
                 ast.Set,
                 ast.JoinedStr,
                 ast.Constant,
-                ast.NameConstant,
             ),
         ):
             return False
@@ -127,7 +126,7 @@ class ModuleStubGenerator(ast.NodeVisitor):
         else:
             func = type(value).__name__.lower()
 
-        if func != "constant" and func != "nameconstant":
+        if func != "constant":
             node.value = ast.Call(func=ast.Name(id=func, ctx=ast.Load()), args=[], keywords=[])
             return True
 
@@ -153,7 +152,7 @@ class ModuleStubGenerator(ast.NodeVisitor):
         if not isinstance(node.target, ast.Name) or node.target.id.startswith("_"):
             return
 
-        self.hide_assign_value(node)
+        node.value = None
         self.write_node(node)
 
     def visit_Assign(self, node: ast.Assign) -> Any:

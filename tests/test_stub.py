@@ -105,14 +105,14 @@ set_value: Set[int] = {1, 2, 3}
 dict_value: Dict[str, int] = {"foo": 1, "bar": 2}
             """,
             """
-int_value: int = int()
-str_value: str = str()
-bool_value: bool = True
-float_value: float = float()
-tuple_value: Tuple[int, int, int] = tuple()
-list_value: List[int] = list()
-set_value: Set[int] = set()
-dict_value: Dict[str, int] = dict()
+int_value: int = ...
+str_value: str = ...
+bool_value: bool = ...
+float_value: float = ...
+tuple_value: Tuple[int, int, int] = ...
+list_value: List[int] = ...
+set_value: Set[int] = ...
+dict_value: Dict[str, int] = ...
             """,
         )
 
@@ -123,7 +123,7 @@ _value: int = 1
 value: int = 2
             """,
             """
-value: int = int()
+value: int = ...
             """,
         )
 
