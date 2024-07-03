@@ -1,12 +1,13 @@
 import ast
 import io
 import os
-from ast import AST, AnnAssign, Assign, ClassDef, Ellipsis, Expr, FunctionDef, If, Import, ImportFrom, Name, Pass, Str
+from ast import (AST, AnnAssign, Assign, ClassDef, Ellipsis, Expr, FunctionDef,
+                 If, Import, ImportFrom, Name, Pass, Str, Try, stmt)
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from subprocess import check_call
 from textwrap import dedent, indent
-from typing import Any, Generator, Iterable, List
+from typing import Any, Generator, Iterable, List, Tuple
 
 import astunparse
 
@@ -59,6 +60,24 @@ class ModuleStubGenerator(ast.NodeVisitor):
     def get_parent_node(self) -> AST:
         return self.stack[-2]
 
+    def filter_nodes(self, nodes: Iterable[stmt], allowed_types: Tuple = ()) -> Generator[stmt, None, None]:
+        if not allowed_types:
+            allowed_types = (stmt,)
+
+        for node in nodes:
+            if isinstance(node, allowed_types):
+                yield node
+
+    def visit_nodes(self, nodes: Iterable[stmt], allowed_types: Tuple = ()) -> None:
+        for node in self.filter_nodes(nodes, allowed_types):
+            self.visit(node)
+
+    def is_in_function(self) -> bool:
+        for node in self.stack:
+            if isinstance(node, FunctionDef):
+                return True
+        return False
+
     def visit_Expr(self, node: Expr) -> Any:
         if not isinstance(node.value, Str) or self.is_in_function():
             return self.generic_visit(node)
@@ -71,16 +90,6 @@ class ModuleStubGenerator(ast.NodeVisitor):
             docstring.col_offset = getattr(parent, "col_offset", 0)
 
         self.write_docstring(parent, docstring)
-
-    def visit_nodes(self, *nodes: AST) -> None:
-        for node in nodes:
-            self.visit(node)
-
-    def is_in_function(self) -> bool:
-        for node in self.stack:
-            if isinstance(node, FunctionDef):
-                return True
-        return False
 
     def visit_AnnAssign(self, node: AnnAssign) -> None:
         if self.is_in_function():
@@ -108,7 +117,7 @@ class ModuleStubGenerator(ast.NodeVisitor):
         body = node.body
         node.body = []
         self.write_node(node)
-        self.visit_nodes(*body)
+        self.visit_nodes(body, (Import, ImportFrom, Assign, AnnAssign))
         self.write_ellipsis(parent_col_offset=node.col_offset)
 
     def visit_FunctionDef(self, node: FunctionDef) -> Any:
@@ -139,7 +148,7 @@ class ModuleStubGenerator(ast.NodeVisitor):
             self.write_docstring(node, first_statement.value)
             body = body[1:]
 
-        self.visit_nodes(*body)
+        self.visit_nodes(body, (Import, ImportFrom, Assign, AnnAssign, If, FunctionDef, Expr, Pass, Ellipsis))
         self.write_ellipsis(parent_col_offset=node.col_offset)
 
     def visit_Import(self, node: Import) -> Any:
@@ -147,6 +156,15 @@ class ModuleStubGenerator(ast.NodeVisitor):
 
     def visit_ImportFrom(self, node: ImportFrom) -> Any:
         self.write_node(node)
+
+    def visit_Try(self, node: Try) -> Any:
+        allowed_types = (Import, ImportFrom, Assign, AnnAssign, Pass)
+        node.body = list(self.filter_nodes(node.body, allowed_types))
+        node.orelse = list(self.filter_nodes(node.orelse, allowed_types))
+        node.finalbody = list(self.filter_nodes(node.finalbody, allowed_types))
+
+        if node.body:
+            self.write_node(node)
 
     def visit(self, node: AST) -> None:
         with self.scope(node):

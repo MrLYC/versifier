@@ -415,3 +415,43 @@ if True:
     ...
             """,
         )
+
+    def test_try_import(self) -> None:
+        self.assert_generate_ast(
+            """
+try:
+    import foo
+except ImportError:
+    foo = None
+            """,
+        )
+
+    def test_try_call(self) -> None:
+        self.assert_generate_ast(
+            """
+try:
+    foo()
+except ValueError:
+    pass
+            """,
+            "",
+        )
+
+    def test_try_assign(self) -> None:
+        self.assert_generate_ast(
+            """
+try:
+    v = 1
+except AttributeError:
+    pass
+            """,
+        )
+
+    def test_for_statements(self) -> None:
+        self.assert_generate_ast(
+            """
+for i in range(10):
+    call(i)
+            """,
+            "",
+        )
