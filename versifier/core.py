@@ -151,9 +151,16 @@ class PackageObfuscator:
             output_dir = root_dir
             in_replace = True
 
+        package_set = set()
+        for package in packages:
+            package_set.add(package)
+            package_set.add(package.replace("-", "_"))
+            package_set.add(package.replace("_", "-"))
+
         with TemporaryDirectory() as td:
-            collected_packages = self.compiler.compile_packages(root_dir, td, packages)
-            self.compiler.generate_package_stubs(root_dir, td, packages)
+            collected_packages = self.compiler.compile_packages(root_dir, td, package_set)
+
+            self.compiler.generate_package_stubs(root_dir, td, package_set)
 
             for output in os.listdir(td):
                 shutil.move(os.path.join(td, output), os.path.join(output_dir, output))

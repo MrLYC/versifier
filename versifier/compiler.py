@@ -64,13 +64,6 @@ class Compiler:
             if handle_target(package, f"{name}.py"):
                 continue
 
-            name = package.replace("-", "_")
-            if handle_target(package, name):
-                continue
-
-            if handle_target(package, f"{name}.py"):
-                continue
-
         return targets.values()
 
     def generate_package_stubs(

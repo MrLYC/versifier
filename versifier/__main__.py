@@ -103,7 +103,7 @@ def requirements_to_poetry(
 
 
 @cli.command(help="convert poetry to requirements")
-@click.option("-o", "--output", default="", help="output file")
+@click.option("-o", "--output", default="requirements.txt", help="output file")
 @click.option("--exclude-specifiers", is_flag=True, help="exclude specifiers")
 @click.option("--include-comments", is_flag=True, help="include comments")
 @click.option("-d", "--include-dev-requirements", is_flag=True, help="include dev requirements")
@@ -145,7 +145,7 @@ def poetry_to_requirements(
 
 
 @cli.command(help="extract private packages")
-@click.option("-o", "--output", default=".", help="output dir")
+@click.option("-o", "--output", default="output", help="output dir")
 @click.option("-E", "--extra-requirements", multiple=True, default=[], help="extra requirements")
 @click.option("--exclude-file-patterns", multiple=True, default=[], help="exclude files")
 @click.option("-P", "--private-packages", multiple=True, default=[], help="private packages")
@@ -162,6 +162,7 @@ def extract_private_packages(
     if not private_packages:
         private_packages = conf.get_private_packages() or []
 
+    os.makedirs(output, exist_ok=True)
     ext = core.PackageExtractor(ctx.poetry)
     ext.extract_packages(
         output_dir=output,
@@ -172,13 +173,13 @@ def extract_private_packages(
 
 
 @cli.command(help="obfuscate project dirs")
-@click.option("-o", "--output", default=None, help="output dir")
+@click.option("-o", "--output", default="output", help="output dir")
 @click.option("-d", "--sub-dirs", multiple=True, default=None, help="included sub dirs")
 @click.option("--exclude-packages", multiple=True, default=["*.tests"], help="exclude packages")
 @Context.wrapper
 def obfuscate_project_dirs(
     ctx: Context,
-    output: Optional[str],
+    output: str,
     sub_dirs: List[str],
     exclude_packages: List[str],
 ) -> None:
@@ -188,6 +189,7 @@ def obfuscate_project_dirs(
     if not sub_dirs:
         sub_dirs = conf.get_projects_dirs() or ["."]
 
+    os.makedirs(output, exist_ok=True)
     for d in sub_dirs:
         path = root_dir.joinpath(d)
         ext = core.PackageObfuscator(compiler=ctx.compiler)
@@ -200,13 +202,13 @@ def obfuscate_project_dirs(
 
 
 @cli.command(help="obfuscate private packages")
-@click.option("-o", "--output", default=None, help="output dir")
+@click.option("-o", "--output", default="output", help="output dir")
 @click.option("-E", "--extra-requirements", multiple=True, default=[], help="extra requirements")
 @click.option("-P", "--private-packages", multiple=True, default=[], help="private packages")
 @Context.wrapper
 def obfuscate_private_packages(
     ctx: Context,
-    output: Optional[str],
+    output: str,
     extra_requirements: List[str],
     private_packages: List[str],
 ) -> None:
@@ -218,6 +220,7 @@ def obfuscate_private_packages(
     if not private_packages:
         raise click.ClickException("No private packages found")
 
+    os.makedirs(output, exist_ok=True)
     with TemporaryDirectory() as td:
         extractor = core.PackageExtractor(ctx.poetry)
         extractor.extract_packages(

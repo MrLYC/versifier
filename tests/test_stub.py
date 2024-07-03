@@ -50,6 +50,7 @@ from a.b.c import d
 int_value = 1
 str_value = "foo"
 bool_value = True
+none_value = None
 float_value = 1.0
 tuple_value = (1, 2, 3)
 list_value = [1, 2, 3]
@@ -58,7 +59,21 @@ dict_value = {"foo": 1, "bar": 2}
 call = foo(1, 2, 3)
 call_in_list = [foo(1, 2, 3)]
 a = b = c = d
+            """,
             """
+int_value = int()
+str_value = str()
+bool_value = True
+none_value = None
+float_value = float()
+tuple_value = tuple()
+list_value = list()
+set_value = set()
+dict_value = dict()
+call = foo(1, 2, 3)
+call_in_list = list()
+a = b = c = d
+            """,
         )
 
     def test_assign_private(self) -> None:
@@ -69,7 +84,7 @@ value = 2
 x = _value = value
             """,
             """
-value = 2
+value = int()
 x = _value = value
             """,
         )
@@ -88,7 +103,17 @@ tuple_value: Tuple[int, int, int] = (1, 2, 3)
 list_value: List[int] = [1, 2, 3]
 set_value: Set[int] = {1, 2, 3}
 dict_value: Dict[str, int] = {"foo": 1, "bar": 2}
+            """,
             """
+int_value: int = int()
+str_value: str = str()
+bool_value: bool = True
+float_value: float = float()
+tuple_value: Tuple[int, int, int] = tuple()
+list_value: List[int] = list()
+set_value: Set[int] = set()
+dict_value: Dict[str, int] = dict()
+            """,
         )
 
     def test_annotation_assign_private(self) -> None:
@@ -98,7 +123,7 @@ _value: int = 1
 value: int = 2
             """,
             """
-value: int = 2
+value: int = int()
             """,
         )
 
@@ -251,17 +276,17 @@ class DataClass:
             """,
             """
 class NewStyle:
-    a = 1
     ...
+    a = int()
 
 class OldStyle(object):
-    a = 1
     ...
+    a = int()
 
 @dataclass
 class DataClass:
-    a: int
     ...
+    a: int
             """,
         )
 
@@ -280,7 +305,6 @@ class WithDocstring:
     This is a docstring.
     Over.
     '''
-    ...
             """,
         )
 
@@ -340,14 +364,13 @@ class Foo:
     Over.
     '''
 
-    a = 1
+    a = int()
     b: int
 
     def get_b(self):
         '''
         Get b.
         '''
-    ...
             """,
         )
 
@@ -360,11 +383,11 @@ class Foo:
             """,
             """
 class Foo:
+    ...
     a: int
     '''
     This is a docstring.
     '''
-    ...
             """,
         )
 
@@ -386,7 +409,14 @@ a = 1
 This is a docstring.
 Over.
 '''
+            """,
             """
+a = int()
+'''
+This is a docstring.
+Over.
+'''
+            """,
         )
 
     def test_if_for_import(self) -> None:
@@ -397,8 +427,8 @@ if AUTH_USER_MODEL == settings.AUTH_USER_MODEL:
             """,
             """
 if AUTH_USER_MODEL == settings.AUTH_USER_MODEL:
-    from django.contrib import auth
     ...
+    from django.contrib import auth
             """,
         )
 
@@ -411,8 +441,8 @@ if True:
             """,
             """
 if True:
-    v = call(1)
     ...
+    v = call(1)
             """,
         )
 
@@ -442,6 +472,12 @@ except ValueError:
             """
 try:
     v = 1
+except AttributeError:
+    pass
+            """,
+            """
+try:
+    v = int()
 except AttributeError:
     pass
             """,
