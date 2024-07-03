@@ -61,17 +61,17 @@ call_in_list = [foo(1, 2, 3)]
 a = b = c = d
             """,
             """
-int_value = int()
-str_value = str()
+int_value = ...
+str_value = ...
 bool_value = True
 none_value = None
-float_value = float()
-tuple_value = tuple()
-list_value = list()
-set_value = set()
-dict_value = dict()
+float_value = ...
+tuple_value = ...
+list_value = ...
+set_value = ...
+dict_value = ...
 call = foo(1, 2, 3)
-call_in_list = list()
+call_in_list = ...
 a = b = c = d
             """,
         )
@@ -84,7 +84,7 @@ value = 2
 x = _value = value
             """,
             """
-value = int()
+value = ...
 x = _value = value
             """,
         )
@@ -277,11 +277,11 @@ class DataClass:
             """
 class NewStyle:
     ...
-    a = int()
+    a = ...
 
 class OldStyle(object):
     ...
-    a = int()
+    a = ...
 
 @dataclass
 class DataClass:
@@ -364,7 +364,7 @@ class Foo:
     Over.
     '''
 
-    a = int()
+    a = ...
     b: int
 
     def get_b(self):
@@ -411,7 +411,7 @@ Over.
 '''
             """,
             """
-a = int()
+a = ...
 '''
 This is a docstring.
 Over.
@@ -477,7 +477,7 @@ except AttributeError:
             """,
             """
 try:
-    v = int()
+    v = ...
 except AttributeError:
     pass
             """,
