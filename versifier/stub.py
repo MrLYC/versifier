@@ -103,7 +103,7 @@ class ModuleStubGenerator(ast.NodeVisitor):
 
     def hide_assign_value(self, node: Union[ast.Assign, ast.AnnAssign]) -> bool:
         value = node.value
-        if isinstance(value, (ast.Call, ast.Constant, ast.Name, ast.Attribute, ast.NameConstant)):
+        if isinstance(value, (ast.Call, ast.Name, ast.Attribute, ast.NameConstant)):
             return False
 
         node.value = ast.Ellipsis()
