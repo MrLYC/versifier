@@ -48,7 +48,7 @@ from a.b.c import d
         self.assert_generate_ast(
             """
 int_value = 1
-str_value = "foo"
+str_value = "str"
 bool_value = True
 none_value = None
 float_value = 1.0
@@ -96,7 +96,7 @@ x = _value = value
         self.assert_generate_ast(
             """
 int_value: int = 1
-str_value: str = "foo"
+str_value: str = "str"
 bool_value: bool = True
 float_value: float = 1.0
 tuple_value: Tuple[int, int, int] = (1, 2, 3)
