@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, List
 
 import click
 
@@ -161,6 +161,9 @@ def extract_private_packages(
 
     if not private_packages:
         private_packages = conf.get_private_packages() or []
+
+    if not private_packages:
+        raise click.ClickException("No private packages found")
 
     os.makedirs(output, exist_ok=True)
     ext = core.PackageExtractor(ctx.poetry)
