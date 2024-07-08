@@ -163,7 +163,7 @@ def extract_private_packages(
         private_packages = conf.get_private_packages() or []
 
     if not private_packages:
-        raise click.ClickException("No private packages found")
+        raise click.UsageError("No private packages found")
 
     os.makedirs(output, exist_ok=True)
     ext = core.PackageExtractor(ctx.poetry)
@@ -221,7 +221,7 @@ def obfuscate_private_packages(
         private_packages = conf.get_private_packages() or []
 
     if not private_packages:
-        raise click.ClickException("No private packages found")
+        raise click.UsageError("No private packages found")
 
     os.makedirs(output, exist_ok=True)
     with TemporaryDirectory() as td:
