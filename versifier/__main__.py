@@ -7,11 +7,12 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Callable, List
 
-import click
+from pyparsing import NotAny
 
+from click import Command
 from versifier import core
 
-from .compiler import Compiler
+from .compiler import Compiler, Cython, Nuitka3, SmartCompiler
 from .config import Config
 from .poetry import Poetry
 
@@ -31,7 +32,7 @@ class Context:
 
     @property
     def compiler(self) -> Compiler:
-        return Compiler(self.nuitka_path)
+        return SmartCompiler([Cython(), Nuitka3(self.nuitka_path)])
 
     @property
     def config(self) -> Config:

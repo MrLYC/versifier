@@ -1,13 +1,27 @@
+import logging
 import os
+import shutil
 from dataclasses import dataclass
+from distutils.core import setup
 from subprocess import check_call
-from typing import Iterable, Optional
+from tempfile import TemporaryDirectory
+from typing import Any, Dict, Iterable, List, Optional
 
-from .stub import PackageStubGenerator
+from Cython.Build import cythonize
+from typing_extensions import Protocol
+
+logger = logging.getLogger(__name__)
+
+
+class Compiler(Protocol):
+    def compile_packages(
+        self, source_dir: str, output_dir: str, packages: Iterable[str], **kwargs: Dict[str, Any]
+    ) -> None:
+        ...
 
 
 @dataclass
-class Compiler:
+class Nuitka3:
     nuitka_path: str = "nuitka3"
 
     def _compile_package(
@@ -39,8 +53,8 @@ class Compiler:
         output_dir: str,
         packages: Iterable[str],
         nofollow_import_to: Optional[Iterable[str]] = None,
-    ) -> Iterable[str]:
-        targets = {}
+        **kwargs: Dict[str, Any],
+    ) -> None:
         nofollow_import_to_list = list(nofollow_import_to or [])
 
         def handle_target(package: str, filename: str) -> bool:
@@ -51,7 +65,6 @@ class Compiler:
                     package_path=path,
                     nofollow_import_to=nofollow_import_to_list,
                 )
-                targets[package] = path
 
                 return True
             return False
@@ -64,13 +77,62 @@ class Compiler:
             if handle_target(package, f"{name}.py"):
                 continue
 
-        return targets.values()
 
-    def generate_package_stubs(
+class Cython:
+    def compile_packages(
+        self, source_dir: str, output_dir: str, packages: Iterable[str], **kwargs: Dict[str, Any]
+    ) -> None:
+        os.makedirs(output_dir, exist_ok=True)
+        module_list = []
+        with TemporaryDirectory() as td:
+            for package in packages:
+                package_path = os.path.join(source_dir, package)
+
+                if os.path.isdir(package_path):
+                    for root, _, files in os.walk(package_path):
+                        for file in files:
+                            if file.endswith(".py"):
+                                module_list.append(os.path.join(root, file))
+                else:
+                    package_file = f"{package_path}.py"
+                    if not os.path.isfile(package_file):
+                        continue
+
+                    target_path = f"{os.path.join(td, package)}.py"
+                    shutil.copy(package_file, target_path)
+                    module_list.append(target_path)
+
+            cur_dir = os.path.realpath(os.curdir)
+            os.chdir(source_dir)
+            try:
+                setup(
+                    ext_modules=cythonize(module_list, compiler_directives={"language_level": 3}, build_dir=td),
+                    script_args=["build_ext", "-b", output_dir, "-t", td],
+                )
+            finally:
+                os.chdir(cur_dir)
+
+
+@dataclass
+class SmartCompiler:
+    compilers: List[Compiler]
+
+    def compile_packages(
         self,
         source_dir: str,
         output_dir: str,
         packages: Iterable[str],
+        **kwargs: Dict[str, Any],
     ) -> None:
-        generator = PackageStubGenerator(output_dir=output_dir)
-        generator.generate(source_dir=source_dir, packages=packages)
+        failed_packages = packages
+
+        for compiler in self.compilers:
+            packages = failed_packages
+            failed_packages = []
+
+            for package in packages:
+                try:
+                    compiler.compile_packages(source_dir, output_dir, [package], **kwargs)
+                except Exception as e:
+                    logger.warning("Failed to compile package %s with %s: %s", package, compiler, e)
+                    failed_packages.append(package)

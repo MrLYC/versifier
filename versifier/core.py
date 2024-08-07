@@ -9,6 +9,7 @@ from typing import Any, Iterable, List, Optional, Set
 
 from .compiler import Compiler
 from .poetry import Poetry, RequirementsFile
+from .stub import PackageStubGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -142,15 +143,9 @@ class PackageObfuscator:
         self,
         packages: Iterable[str],
         root_dir: str,
-        output_dir: Optional[str] = None,
+        output_dir: str,
         exclude_packages: Optional[List[str]] = None,
     ) -> None:
-        in_replace = False
-
-        if output_dir is None:
-            output_dir = root_dir
-            in_replace = True
-
         package_set = set()
         for package in packages:
             package_set.add(package)
@@ -158,18 +153,9 @@ class PackageObfuscator:
             package_set.add(package.replace("_", "-"))
 
         with TemporaryDirectory() as td:
-            collected_packages = self.compiler.compile_packages(root_dir, td, package_set)
-
-            self.compiler.generate_package_stubs(root_dir, td, package_set)
+            self.compiler.compile_packages(root_dir, td, package_set)
+            generator = PackageStubGenerator(output_dir=td)
+            generator.generate(source_dir=root_dir, packages=packages)
 
             for output in os.listdir(td):
                 shutil.move(os.path.join(td, output), os.path.join(output_dir, output))
-
-        if not in_replace:
-            return
-
-        for p in collected_packages:
-            if os.path.isdir(p):
-                shutil.rmtree(p)
-            else:
-                os.remove(p)
