@@ -7,9 +7,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Callable, List
 
-from pyparsing import NotAny
-
-from click import Command
+import click
 from versifier import core
 
 from .compiler import Compiler, Cython, Nuitka3, SmartCompiler
