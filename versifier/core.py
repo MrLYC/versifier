@@ -132,7 +132,7 @@ class PackageExtractor:
             self._do_clean_directory(package_path, exclude_file_patterns)
             os.makedirs(output_dir, exist_ok=True)
             for n in os.listdir(package_path):
-                os.rename(os.path.join(package_path, n), os.path.join(output_dir, n))
+                shutil.move(os.path.join(package_path, n), os.path.join(output_dir, n))
 
 
 @dataclass
