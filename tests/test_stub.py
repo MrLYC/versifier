@@ -1,8 +1,10 @@
 import ast
 import io
+import tempfile
+from pathlib import Path
 from typing import Optional
 
-from versifier.stub import ModuleStubGenerator
+from versifier.stub import ModuleStubGenerator, PackageStubGenerator
 
 
 class TestModuleStubGenerator:
@@ -491,3 +493,198 @@ for i in range(10):
             """,
             "",
         )
+
+    def test_annotation_assign_with_attribute_target(self) -> None:
+        self.assert_generate_ast(
+            """
+class Foo:
+    self.a: int = 1
+            """,
+            """
+class Foo:
+    ...
+            """,
+        )
+
+    def test_function_in_function(self) -> None:
+        self.assert_generate_ast(
+            """
+def outer():
+    def inner():
+        return 1
+    return inner()
+            """,
+            """
+def outer():
+    ...
+            """,
+        )
+
+    def test_assign_in_function(self) -> None:
+        self.assert_generate_ast(
+            """
+def foo():
+    x = 1
+    return x
+            """,
+            """
+def foo():
+    ...
+            """,
+        )
+
+    def test_annotation_assign_in_function(self) -> None:
+        self.assert_generate_ast(
+            """
+def foo():
+    x: int = 1
+    return x
+            """,
+            """
+def foo():
+    ...
+            """,
+        )
+
+    def test_if_in_function(self) -> None:
+        self.assert_generate_ast(
+            """
+def foo():
+    if True:
+        return 1
+    return 0
+            """,
+            """
+def foo():
+    ...
+            """,
+        )
+
+    def test_class_with_import(self) -> None:
+        self.assert_generate_ast(
+            """
+class Foo:
+    import os
+    from sys import path
+            """,
+            """
+class Foo:
+    ...
+    import os
+    from sys import path
+            """,
+        )
+
+    def test_empty_body(self) -> None:
+        self.assert_generate_ast(
+            """
+import os
+            """,
+            """
+import os
+            """,
+        )
+
+
+class TestPackageStubGenerator:
+    def test_generate_single_package(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            source_dir = Path(td) / "source"
+            source_dir.mkdir()
+            package_dir = source_dir / "mypackage"
+            package_dir.mkdir()
+            (package_dir / "__init__.py").write_text("x = 1\n")
+            (package_dir / "module.py").write_text("def foo():\n    return 1\n")
+
+            output_dir = Path(td) / "output"
+            output_dir.mkdir()
+
+            generator = PackageStubGenerator(output_dir=str(output_dir))
+            generator.generate(source_dir=str(source_dir), packages=["mypackage"])
+
+            stub_dir = output_dir / "mypackage-stubs"
+            assert stub_dir.exists()
+            assert (stub_dir / "__init__.pyi").exists()
+            assert (stub_dir / "module.pyi").exists()
+
+    def test_generate_multiple_packages(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            source_dir = Path(td) / "source"
+            source_dir.mkdir()
+
+            pkg1_dir = source_dir / "pkg1"
+            pkg1_dir.mkdir()
+            (pkg1_dir / "__init__.py").write_text("a = 1\n")
+
+            pkg2_dir = source_dir / "pkg2"
+            pkg2_dir.mkdir()
+            (pkg2_dir / "__init__.py").write_text("b = 2\n")
+
+            output_dir = Path(td) / "output"
+            output_dir.mkdir()
+
+            generator = PackageStubGenerator(output_dir=str(output_dir))
+            generator.generate(source_dir=str(source_dir), packages=["pkg1", "pkg2"])
+
+            assert (output_dir / "pkg1-stubs").exists()
+            assert (output_dir / "pkg2-stubs").exists()
+
+    def test_generate_nested_package(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            source_dir = Path(td) / "source"
+            source_dir.mkdir()
+            package_dir = source_dir / "mypackage"
+            package_dir.mkdir()
+            (package_dir / "__init__.py").write_text("x = 1\n")
+
+            subpackage_dir = package_dir / "subpackage"
+            subpackage_dir.mkdir()
+            (subpackage_dir / "__init__.py").write_text("y = 2\n")
+            (subpackage_dir / "module.py").write_text("def bar():\n    return 2\n")
+
+            output_dir = Path(td) / "output"
+            output_dir.mkdir()
+
+            generator = PackageStubGenerator(output_dir=str(output_dir))
+            generator.generate(source_dir=str(source_dir), packages=["mypackage"])
+
+            stub_dir = output_dir / "mypackage-stubs"
+            assert stub_dir.exists()
+            assert (stub_dir / "__init__.pyi").exists()
+            assert (stub_dir / "subpackage" / "__init__.pyi").exists()
+            assert (stub_dir / "subpackage" / "module.pyi").exists()
+
+    def test_generate_skips_non_python_files(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            source_dir = Path(td) / "source"
+            source_dir.mkdir()
+            package_dir = source_dir / "mypackage"
+            package_dir.mkdir()
+            (package_dir / "__init__.py").write_text("x = 1\n")
+            (package_dir / "data.txt").write_text("some data\n")
+            (package_dir / "config.json").write_text("{}\n")
+
+            output_dir = Path(td) / "output"
+            output_dir.mkdir()
+
+            generator = PackageStubGenerator(output_dir=str(output_dir))
+            generator.generate(source_dir=str(source_dir), packages=["mypackage"])
+
+            stub_dir = output_dir / "mypackage-stubs"
+            assert stub_dir.exists()
+            assert (stub_dir / "__init__.pyi").exists()
+            assert not (stub_dir / "data.txti").exists()
+            assert not (stub_dir / "config.jsoni").exists()
+
+    def test_generate_empty_package(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            source_dir = Path(td) / "source"
+            source_dir.mkdir()
+            package_dir = source_dir / "emptypackage"
+            package_dir.mkdir()
+
+            output_dir = Path(td) / "output"
+            output_dir.mkdir()
+
+            generator = PackageStubGenerator(output_dir=str(output_dir))
+            generator.generate(source_dir=str(source_dir), packages=["emptypackage"])
