@@ -31,7 +31,7 @@ jobs:
         run: |
           uv tool install poetry
           poetry self add poetry-plugin-export
-          poetry lock --no-update
+          poetry lock
 
       - uses: actions/cache@v4
         with:
