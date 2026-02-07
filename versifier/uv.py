@@ -32,6 +32,9 @@ class Uv:
         extra_requirements: Optional[Iterable[str]] = None,
         with_credentials: bool = False,
     ) -> RequirementsFile:
+        if with_credentials:
+            logger.warning("uv export does not support embedding credentials; with_credentials will be ignored")
+
         with TemporaryDirectory() as td:
             requirement_path = os.path.join(td, "requirements.txt")
 
@@ -57,6 +60,9 @@ class Uv:
         self, include_dev_requirements: bool = False, extra_requirements: Optional[Iterable[str]] = None
     ) -> None:
         commands = [self.uv_path, "sync"]
+
+        if not include_dev_requirements:
+            commands.append("--no-dev")
 
         if extra_requirements:
             commands.extend(f"--extra={i}" for i in extra_requirements)

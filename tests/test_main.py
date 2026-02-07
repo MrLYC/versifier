@@ -139,9 +139,10 @@ class TestContext:
                     uv_path="uv",
                     nuitka_path="nuitka3",
                 )
+                import click
                 import pytest
 
-                with pytest.raises(Exception):
+                with pytest.raises(click.UsageError, match="No uv.lock or poetry.lock found"):
                     ctx.package_manager
             finally:
                 os.chdir(original_dir)

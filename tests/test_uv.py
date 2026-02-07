@@ -52,6 +52,15 @@ class TestUv:
         args = mock_check_call.call_args[0][0]
         assert "uv" in args
         assert "sync" in args
+        assert "--no-dev" in args
+
+    @patch("versifier.uv.check_call")
+    def test_install_with_dev(self, mock_check_call: MagicMock) -> None:
+        uv = Uv()
+        uv.install(include_dev_requirements=True)
+        mock_check_call.assert_called_once()
+        args = mock_check_call.call_args[0][0]
+        assert "--no-dev" not in args
 
     @patch("versifier.uv.check_call")
     def test_install_with_extras(self, mock_check_call: MagicMock) -> None:
@@ -150,5 +159,28 @@ class TestUv:
                 args = mock_check_call.call_args[0][0]
                 assert "--no-dev" not in args
                 assert "--extra=extra1" in args
+            finally:
+                os.chdir(original_dir)
+
+    @patch("versifier.uv.logger")
+    @patch("versifier.uv.check_call")
+    def test_export_requirements_with_credentials_warns(self, mock_check_call: MagicMock, mock_logger: MagicMock) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            original_dir = os.getcwd()
+            try:
+                os.chdir(td)
+
+                def side_effect(commands: list) -> None:
+                    for cmd in commands:
+                        if cmd.startswith("--output-file="):
+                            req_path = cmd.split("=", 1)[1]
+                            Path(req_path).write_text("requests==2.28.0\n")
+                            break
+
+                mock_check_call.side_effect = side_effect
+
+                uv = Uv()
+                uv.export_requirements(with_credentials=True)
+                mock_logger.warning.assert_called_once()
             finally:
                 os.chdir(original_dir)
