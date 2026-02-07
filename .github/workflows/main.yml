@@ -28,7 +28,9 @@ jobs:
         run: uv sync
 
       - name: Install Poetry (used by versifier tool)
-        run: uv tool install poetry
+        run: |
+          uv tool install poetry
+          poetry self add poetry-plugin-export
 
       - uses: actions/cache@v4
         with:
