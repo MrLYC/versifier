@@ -3,6 +3,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import click
 from click.testing import CliRunner
 
 from versifier.__main__ import (
@@ -141,7 +142,7 @@ class TestContext:
                 )
                 import pytest
 
-                with pytest.raises(Exception):
+                with pytest.raises(click.UsageError, match="No uv.lock or poetry.lock found"):
                     ctx.package_manager
             finally:
                 os.chdir(original_dir)
