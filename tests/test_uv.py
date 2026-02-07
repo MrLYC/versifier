@@ -1,7 +1,6 @@
 import os
 import tempfile
 from pathlib import Path
-from typing import Optional
 from unittest.mock import MagicMock, patch
 
 from versifier.uv import Uv
