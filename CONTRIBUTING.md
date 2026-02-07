@@ -45,7 +45,7 @@ If you are proposing a new feature:
 # Get Started!
 
 Ready to contribute? Here's how to set up `versifier` for local development.
-Please note this documentation assumes you already have `poetry` and `Git` installed and ready to go.
+Please note this documentation assumes you already have `uv` and `Git` installed and ready to go.
 
 1. Fork the `versifier` repo on GitHub.
 
@@ -71,17 +71,12 @@ pyenv local <x.y.z>
 Then, install and activate the environment with:
 
 ```bash
-poetry install
-poetry shell
+make install
 ```
 
-4. Install pre-commit to run linters/formatters at commit time:
+4. Create a branch for local development:
 
-```bash
-poetry run pre-commit install
-```
-
-5. Create a branch for local development:
+Note: pre-commit hooks are installed automatically by `make install`.
 
 ```bash
 git checkout -b name-of-your-bugfix-or-feature
@@ -89,9 +84,9 @@ git checkout -b name-of-your-bugfix-or-feature
 
 Now you can make your changes locally.
 
-6. Don't forget to add test cases for your added functionality to the `tests` directory.
+5. Don't forget to add test cases for your added functionality to the `tests` directory.
 
-7. When you're done making changes, check that your changes pass the formatting tests.
+6. When you're done making changes, check that your changes pass the formatting tests.
 
 ```bash
 make check
@@ -103,17 +98,7 @@ Now, validate that all unit tests are passing:
 make test
 ```
 
-9. Before raising a pull request you should also run tox.
-   This will run the tests across different versions of Python:
-
-```bash
-tox
-```
-
-This requires you to have multiple versions of python installed.
-This step is also triggered in the CI/CD pipeline, so you could also choose to skip this step locally.
-
-10. Commit your changes and push your branch to GitHub:
+7. Commit your changes and push your branch to GitHub:
 
 ```bash
 git add .
@@ -121,7 +106,7 @@ git commit -m "Your detailed description of your changes."
 git push origin name-of-your-bugfix-or-feature
 ```
 
-11. Submit a pull request through the GitHub website.
+8. Submit a pull request through the GitHub website.
 
 # Pull Request Guidelines
 
