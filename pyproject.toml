@@ -1,3 +1,38 @@
+[project]
+name = "versifier"
+version = "0.3.3"
+description = "Versifier: A lyrical tool to transform Python requirements into Poetry configurations, effortlessly and elegantly."
+authors = [{ name = "MrLYC", email = "fx@m.mrlyc.com" }]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "click==8.0.3",
+    "pip-requirements-parser>=32.0.1",
+    "toml>=0.10.2",
+    "astunparse>=1.6.3",
+    "cython>=3.0.11",
+    "setuptools",
+    "typing_extensions",
+]
+
+[project.urls]
+Repository = "https://github.com/mrlyc/versifier"
+Documentation = "https://mrlyc.github.io/versifier/"
+
+[project.scripts]
+versifier = "versifier.__main__:cli"
+
+[dependency-groups]
+dev = [
+    "mypy>=0.971",
+    "types-toml>=0.10.8.7",
+    "pytest>=7.0.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [tool.poetry]
 name = "versifier"
 version = "0.3.3"
@@ -9,30 +44,20 @@ readme = "README.md"
 packages = [{ include = "versifier" }]
 
 [tool.poetry.dependencies]
-python = ">=3.6.2,<4.0"
+python = ">=3.11,<4.0"
 click = "8.0.3"
-dataclasses = { version = "0.8", python = "<3.7" }
 pip-requirements-parser = "^32.0.1"
 toml = "^0.10.2"
 astunparse = "^1.6.3"
 cython = "^3.0.11"
-
-[[tool.poetry.source]]
-name = "tencent"
-url = "https://mirrors.cloud.tencent.com/pypi/simple"
-default = true
-
-[tool.poetry.scripts]
-versifier = "versifier.__main__:cli"
+setuptools = "*"
+typing_extensions = "*"
+ycyc = "^0.1.11.8"
 
 [tool.poetry.dev-dependencies]
-mypy = "0.971"
-types-toml = "0.10.8.7"
-pytest = "7.0.1"
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+mypy = ">=0.971"
+types-toml = ">=0.10.8.7"
+pytest = ">=7.0.1"
 
 [tool.versifier]
 private_packages = ["click", "pyparsing", "ycyc"]
@@ -52,7 +77,7 @@ show_error_codes = true
 testpaths = ["tests"]
 
 [tool.ruff]
-target-version = "py37"
+target-version = "py311"
 line-length = 120
 fix = true
 select = [

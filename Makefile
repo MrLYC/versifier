@@ -1,26 +1,25 @@
 .PHONY: install
 install: ## Install the poetry environment and install the pre-commit hooks
-	@echo "🚀 Creating virtual environment using pyenv and poetry"
-	@poetry install
-	@ poetry run pre-commit install
-	@poetry shell
+	@echo "🚀 Creating virtual environment using uv"
+	@uv sync
+	@uv run pre-commit install
 
 .PHONY: check
 check: ## Run code quality tools.
-	poetry run versifier requirements-to-poetry -R requirements_ci.txt
-	poetry run versifier extract-private-packages
-	poetry run versifier poetry-to-requirements
+	uv run versifier requirements-to-poetry -R requirements_ci.txt
+	uv run versifier extract-private-packages
+	uv run versifier poetry-to-requirements
 
 .PHONY: test
 test: ## Test the code with pytest
 	$(eval args := )
 	@echo "🚀 Testing code: Running pytest"
-	@poetry run pytest $(args)
+	@uv run pytest $(args)
 
 .PHONY: build
 build: clean-build ## Build wheel file using poetry
 	@echo "🚀 Creating wheel file"
-	@poetry build
+	@uv build
 
 .PHONY: clean-build
 clean-build: ## clean build artifacts
