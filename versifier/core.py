@@ -5,18 +5,21 @@ import shutil
 from dataclasses import dataclass
 from itertools import chain
 from tempfile import TemporaryDirectory
-from typing import Any, Iterable, List, Optional, Set
+from typing import Any, Iterable, List, Optional, Set, Union
 
 from .compiler import Compiler
 from .poetry import Poetry, RequirementsFile
 from .stub import PackageStubGenerator
+from .uv import Uv
+
+PackageManager = Union[Poetry, Uv]
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class DependencyManager:
-    poetry: Poetry
+    poetry: PackageManager
 
     def _merge_requirements(self, requirements: List[str], exclude: Iterable[str] = ()) -> Set[str]:
         results: Set[str] = set()
@@ -51,7 +54,7 @@ class DependencyManager:
 
 @dataclass
 class DependencyExporter:
-    poetry: Poetry
+    poetry: PackageManager
 
     def export_to_requirements_txt(
         self,
@@ -83,7 +86,7 @@ class DependencyExporter:
 
 @dataclass
 class PackageExtractor:
-    poetry: Poetry
+    poetry: PackageManager
 
     def _do_clean_directory(self, path: str, exclude_file_patterns: Iterable[str]) -> None:
         for root, dirs, files in os.walk(path):
