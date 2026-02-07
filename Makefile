@@ -2,12 +2,12 @@
 install: ## Install the poetry environment and install the pre-commit hooks
 	@echo "🚀 Creating virtual environment using uv"
 	@uv sync
-	@uv run pre-commit install
+	@uv tool run pre-commit install
 
 .PHONY: check
 check: ## Run code quality tools.
 	@echo "🚀 Running code quality checks"
-	@uv run pre-commit run -a
+	@uv tool run pre-commit run -a
 
 .PHONY: test
 test: ## Test the code with pytest
