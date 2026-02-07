@@ -121,6 +121,7 @@ class TestUv:
                 args = mock_check_call.call_args[0][0]
                 assert "--no-hashes" in args
                 assert "--no-dev" in args
+                assert "--with-credentials" not in args
             finally:
                 os.chdir(original_dir)
 
