@@ -58,6 +58,9 @@ class Uv:
     ) -> None:
         commands = [self.uv_path, "sync"]
 
+        if not include_dev_requirements:
+            commands.append("--no-dev")
+
         if extra_requirements:
             commands.extend(f"--extra={i}" for i in extra_requirements)
 

@@ -52,6 +52,15 @@ class TestUv:
         args = mock_check_call.call_args[0][0]
         assert "uv" in args
         assert "sync" in args
+        assert "--no-dev" in args
+
+    @patch("versifier.uv.check_call")
+    def test_install_with_dev(self, mock_check_call: MagicMock) -> None:
+        uv = Uv()
+        uv.install(include_dev_requirements=True)
+        mock_check_call.assert_called_once()
+        args = mock_check_call.call_args[0][0]
+        assert "--no-dev" not in args
 
     @patch("versifier.uv.check_call")
     def test_install_with_extras(self, mock_check_call: MagicMock) -> None:
