@@ -48,6 +48,9 @@ class Uv:
             if extra_requirements:
                 commands.extend(f"--extra={i}" for i in extra_requirements)
 
+            if with_credentials:
+                commands.append("--with-credentials")
+
             check_call(commands)
             rf = RequirementsFile.from_file(requirement_path)
 

@@ -150,5 +150,6 @@ class TestUv:
                 args = mock_check_call.call_args[0][0]
                 assert "--no-dev" not in args
                 assert "--extra=extra1" in args
+                assert "--with-credentials" in args
             finally:
                 os.chdir(original_dir)
