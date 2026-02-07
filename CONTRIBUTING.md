@@ -45,7 +45,7 @@ If you are proposing a new feature:
 # Get Started!
 
 Ready to contribute? Here's how to set up `versifier` for local development.
-Please note this documentation assumes you already have `uv` and `Git` installed and ready to go.
+Please note this documentation assumes you already have [`uv`](https://docs.astral.sh/uv/) and `Git` installed and ready to go.
 
 1. Fork the `versifier` repo on GitHub.
 
@@ -62,21 +62,15 @@ git clone git@github.com:YOUR_NAME/versifier.git
 cd versifier
 ```
 
-If you are using `pyenv`, select a version to use locally. (See installed versions with `pyenv versions`)
-
-```bash
-pyenv local <x.y.z>
-```
-
-Then, install and activate the environment with:
+Then, install the environment and pre-commit hooks with:
 
 ```bash
 make install
 ```
 
-4. Create a branch for local development:
+This runs `uv sync` and `uv run pre-commit install`.
 
-Note: pre-commit hooks are installed automatically by `make install`.
+4. Create a branch for local development:
 
 ```bash
 git checkout -b name-of-your-bugfix-or-feature
