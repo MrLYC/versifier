@@ -27,16 +27,5 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Install Poetry (used by versifier tool)
-        run: |
-          uv tool install poetry
-          poetry self add poetry-plugin-export
-          poetry lock
-
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/pre-commit
-          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-
-      - name: Run checks
-        run: make test check
+      - name: Run tests
+        run: make test

@@ -2,13 +2,12 @@
 install: ## Install the poetry environment and install the pre-commit hooks
 	@echo "🚀 Creating virtual environment using uv"
 	@uv sync
-	@uv run pre-commit install
+	@uv tool run pre-commit install
 
 .PHONY: check
 check: ## Run code quality tools.
-	uv run versifier requirements-to-poetry -R requirements_ci.txt
-	uv run versifier extract-private-packages
-	uv run versifier poetry-to-requirements
+	@echo "🚀 Running code quality checks"
+	@uv tool run pre-commit run -a
 
 .PHONY: test
 test: ## Test the code with pytest
@@ -27,11 +26,8 @@ clean-build: ## clean build artifacts
 
 .PHONY: publish
 publish: ## publish a release to pypi.
-	@echo "🚀 Publishing: Dry run."
-	@poetry config pypi-token.pypi $(PYPI_TOKEN)
-	@poetry publish --dry-run
 	@echo "🚀 Publishing."
-	@poetry publish
+	@uv publish
 
 .PHONY: build-and-publish
 build-and-publish: build publish ## Build and publish.
