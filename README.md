@@ -11,7 +11,9 @@
 这个项目提供了一套命令行工具集，主要用于处理 Python 项目的依赖管理。主要功能包括：
 - 将 requirements.txt 转化为 Poetry 的 pyproject.toml
 - 将 Poetry 的 pyproject.toml 导出为 requirements.txt
-- 将私有包提取到指定目录
+- 将 requirements.txt 转化为 uv 的 pyproject.toml
+- 将 uv 的 pyproject.toml 导出为 requirements.txt
+- 将私有包提取到指定目录（自动检测 uv 或 Poetry）
 
 ## Installation
 
@@ -63,12 +65,53 @@ versifier poetry-to-requirements --output <output_file> --exclude-specifiers --i
 - `--nuitka-path`: 指定 nuitka3 的路径。默认为 "nuitka3"。
 - `--log-level`: 指定日志级别。
 
-### extract-private-packages
+### requirements-to-uv
 
-提取私有包。
+将 requirements 转换为 uv。
 
 ```bash
-versifier extract-private-packages --output <output_dir> --extra-requirements <extra_requirements> --exclude-file-patterns <exclude_files> --private-packages <private_packages> --config <config_file> --root <root_dir> --poetry-path <path_to_poetry> --nuitka-path <path_to_nuitka3> --log-level <log_level>
+versifier requirements-to-uv --requirements <requirements_files> --dev-requirements <dev_requirements_files> --exclude <exclude_packages> --add-only --config <config_file> --root <root_dir> --uv-path <path_to_uv> --nuitka-path <path_to_nuitka3> --log-level <log_level>
+```
+
+参数说明：
+- `-R, --requirements`: 指定 requirements 文件。默认为当前目录的 requirements.txt。
+- `-d, --dev-requirements`: 指定开发环境的 requirements 文件。默认为当前目录的 dev-requirements.txt。
+- `-e, --exclude`: 指定要排除的包。
+- `--add-only`: 只添加指定的包，而不初始化项目。
+- `-c, --config`: 指定配置文件。
+- `-r, --root`: 指定根目录。默认为当前目录。
+- `--uv-path`: 指定 uv 的路径。默认为 "uv"。
+- `--nuitka-path`: 指定 nuitka3 的路径。默认为 "nuitka3"。
+- `--log-level`: 指定日志级别。
+
+### uv-to-requirements
+
+将 uv 转换为 requirements。
+
+```bash
+versifier uv-to-requirements --output <output_file> --exclude-specifiers --include-comments --include-dev-requirements --extra-requirements <extra_requirements> --markers <markers> --private-packages <private_packages> --config <config_file> --root <root_dir> --uv-path <path_to_uv> --nuitka-path <path_to_nuitka3> --log-level <log_level>
+```
+
+参数说明：
+- `-o, --output`: 指定输出文件。
+- `--exclude-specifiers`: 排除指定的包。
+- `--include-comments`: 包含注释。
+- `-d, --include-dev-requirements`: 包含开发环境的 requirements。
+- `-E, --extra-requirements`: 指定额外的 requirements。
+- `-m, --markers`: 指定标记。
+- `-P, --private-packages`: 指定私有包。
+- `-c, --config`: 指定配置文件。
+- `-r, --root`: 指定根目录。默认为当前目录。
+- `--uv-path`: 指定 uv 的路径。默认为 "uv"。
+- `--nuitka-path`: 指定 nuitka3 的路径。默认为 "nuitka3"。
+- `--log-level`: 指定日志级别。
+
+### extract-private-packages
+
+提取私有包。该命令会自动检测项目使用的包管理工具（通过检查 `uv.lock` 或 `poetry.lock` 文件），优先使用 uv。
+
+```bash
+versifier extract-private-packages --output <output_dir> --extra-requirements <extra_requirements> --exclude-file-patterns <exclude_files> --private-packages <private_packages> --config <config_file> --root <root_dir> --poetry-path <path_to_poetry> --uv-path <path_to_uv> --nuitka-path <path_to_nuitka3> --log-level <log_level>
 ```
 
 参数说明：
@@ -79,6 +122,7 @@ versifier extract-private-packages --output <output_dir> --extra-requirements <e
 - `-c, --config`: 指定配置文件。
 - `-r, --root`: 指定根目录。默认为当前目录。
 - `--poetry-path`: 指定 poetry 的路径。默认为 "poetry"。
+- `--uv-path`: 指定 uv 的路径。默认为 "uv"。
 - `--nuitka-path`: 指定 nuitka3 的路径。默认为 "nuitka3"。
 - `--log-level`: 指定日志级别。
 
@@ -102,10 +146,10 @@ versifier obfuscate-project-dirs --output <output_dir> --sub-dirs <included_sub_
 
 ### obfuscate-private-packages
 
-混淆私有包。
+混淆私有包。该命令会自动检测项目使用的包管理工具（通过检查 `uv.lock` 或 `poetry.lock` 文件），优先使用 uv。
 
 ```bash
-versifier obfuscate-private-packages --output <output_dir> --extra-requirements <extra_requirements> --private-packages <private_packages> --config <config_file> --root <root_dir> --poetry-path <path_to_poetry> --nuitka-path <path_to_nuitka3> --log-level <log_level>
+versifier obfuscate-private-packages --output <output_dir> --extra-requirements <extra_requirements> --private-packages <private_packages> --config <config_file> --root <root_dir> --poetry-path <path_to_poetry> --uv-path <path_to_uv> --nuitka-path <path_to_nuitka3> --log-level <log_level>
 ```
 
 参数说明：
@@ -115,6 +159,7 @@ versifier obfuscate-private-packages --output <output_dir> --extra-requirements 
 - `-c, --config`: 指定配置文件。
 - `-r, --root`: 指定根目录。默认为当前目录。
 - `--poetry-path`: 指定 poetry 的路径。默认为 "poetry"。
+- `--uv-path`: 指定 uv 的路径。默认为 "uv"。
 - `--nuitka-path`: 指定 nuitka3 的路径。默认为 "nuitka3"。
 - `--log-level`: 指定日志级别。
 
